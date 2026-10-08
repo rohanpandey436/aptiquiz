@@ -148,7 +148,7 @@ export default function Home() {
           <div className="reveal">
             <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-brand-ink">How it works</p>
             <h2 id="how-title" className="display mt-3 text-4xl font-extrabold leading-tight md:text-5xl">
-              Four steps. Ten minutes. Nothing to learn.
+              Four steps. Ten minutes.
             </h2>
             <p className="mt-4 max-w-md text-muted">Works in a classroom, a hostel room or a placement session. Nobody installs anything.</p>
             <div className="mt-8 hidden max-w-xs md:block">
