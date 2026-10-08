@@ -59,7 +59,7 @@ export default function Practice() {
     <Shell>
       <div className="mx-auto max-w-3xl">
         <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-brand-ink">Practice</p>
-        <h1 className="display mt-2 text-4xl font-extrabold">Practise on your own</h1>
+        <h1 className="display mt-2 text-4xl font-extrabold">Practice on your own</h1>
         <p className="mt-2 text-muted">No room, no host, no league. Pick a set, a level and a pace. You get the same report card at the end.</p>
 
         <form onSubmit={start} className="mt-8 flex flex-col gap-6">

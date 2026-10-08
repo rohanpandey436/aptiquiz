@@ -150,6 +150,6 @@ Deployment: `render.yaml` describes a single free web service (build `npm ci && 
 
 ## Who it is for
 
-Students preparing for campus placements, who need to practise aptitude under real time pressure with other people around rather than alone from a PDF. They come back because a game takes ten minutes, the leaderboard makes it social, and the report card tells them something a score sheet cannot: whether to work on speed, on a topic, or on nerves.
+Students preparing for campus placements, who need to practice aptitude under real time pressure with other people around rather than alone from a PDF. They come back because a game takes ten minutes, the leaderboard makes it social, and the report card tells them something a score sheet cannot: whether to work on speed, on a topic, or on nerves.
 
 Placement cells and faculty, who can author question sets once, run rooms every week, see which questions a batch gets wrong, and keep a college league going across the semester.

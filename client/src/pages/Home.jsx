@@ -94,7 +94,7 @@ export default function Home() {
                 </Link>
                 <Link to="/practice">
                   <Button size="lg" variant="glass">
-                    Practise alone
+                    Practice alone
                   </Button>
                 </Link>
               </div>
