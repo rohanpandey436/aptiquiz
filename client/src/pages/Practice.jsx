@@ -77,8 +77,7 @@ export default function Practice() {
 
   const useAiSet = ({ set, summary }) => {
     setSets((list) => [summary, ...(list || []).filter((s) => s.id !== summary.id)]);
-    setSource("builtin");
-    chooseSet(set.id);
+    setSetId(set.id);
   };
 
   const start = async (e) => {
@@ -107,7 +106,7 @@ export default function Practice() {
               {aiOn ? <Segmented options={SOURCES} value={source} onChange={setSource} label="Question source" /> : null}
             </div>
             {source === "ai" ? (
-              <AiQuestions onUse={useAiSet} />
+              <AiQuestions onUse={useAiSet} chosenId={setId} />
             ) : !sets ? (
               <Spinner label="Loading sets" />
             ) : sets.length === 0 ? (

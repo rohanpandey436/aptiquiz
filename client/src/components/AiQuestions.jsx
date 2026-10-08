@@ -18,7 +18,7 @@ const LEVELS = [
 
 const IDEAS = ["Percentages", "Time and work", "Blood relations", "Number series", "Synonyms", "Pie charts"];
 
-export function AiQuestions({ onUse }) {
+export function AiQuestions({ onUse, chosenId = null }) {
   const [topic, setTopic] = useState("");
   const [count, setCount] = useState("10");
   const [level, setLevel] = useState("mixed");
@@ -36,7 +36,9 @@ export function AiQuestions({ onUse }) {
     setBusy(true);
     setResult(null);
     try {
-      setResult(await api.post("/sets/ai", { topic: clean, count: Number(count), difficulty: level }));
+      const res = await api.post("/sets/ai", { topic: clean, count: Number(count), difficulty: level });
+      setResult(res);
+      onUse(res);
     } catch (err) {
       setError(err.message);
     }
@@ -89,7 +91,7 @@ export function AiQuestions({ onUse }) {
         <Button onClick={generate} disabled={busy || topic.trim().length < 2}>
           {busy ? "Writing" : result ? "Write a new set" : "Write questions"}
         </Button>
-        <span className="text-sm text-muted">AI writes the questions and answers. You read them before anyone plays.</span>
+        <span className="text-sm text-muted">AI writes the questions and answers, and only those are played. Read them before anyone plays.</span>
       </div>
       {busy ? <Spinner label={`Writing ${count} questions on ${topic.trim()}. This takes about half a minute.`} /> : null}
       {error ? (
@@ -102,12 +104,12 @@ export function AiQuestions({ onUse }) {
           </span>
         </Banner>
       ) : null}
-      {result ? <Preview set={result.set} onUse={() => onUse(result)} /> : null}
+      {result ? <Preview set={result.set} selected={result.set.id === chosenId} /> : null}
     </div>
   );
 }
 
-function Preview({ set, onUse }) {
+function Preview({ set, selected }) {
   return (
     <div className="flex flex-col gap-3 rounded-card border border-line bg-surface p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -117,7 +119,7 @@ function Preview({ set, onUse }) {
             {set.questions.length} questions. AI can make mistakes, so check each answer below.
           </p>
         </div>
-        <Button onClick={onUse}>Use these questions</Button>
+        {selected ? <Badge tone="good">Ready. Only these questions will be played.</Badge> : null}
       </div>
       <ol className="flex max-h-[30rem] flex-col gap-2 overflow-auto pr-1" aria-label="Questions written by AI">
         {set.questions.map((q, i) => (

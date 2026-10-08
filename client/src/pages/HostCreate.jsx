@@ -20,6 +20,7 @@ export default function HostCreate() {
   const navigate = useNavigate();
   const [source, setSource] = useState("builtin");
   const [aiOn, setAiOn] = useState(false);
+  const [aiSet, setAiSet] = useState(null);
   const [sets, setSets] = useState(null);
   const [setId, setSetId] = useState("");
   const [ownTitle, setOwnTitle] = useState("");
@@ -63,20 +64,19 @@ export default function HostCreate() {
 
   const useAiSet = ({ set, summary }) => {
     setSets((list) => [summary, ...(list || []).filter((s) => s.id !== summary.id)]);
-    setSource("builtin");
-    chooseSet(set.id);
+    setAiSet(set);
   };
 
   const parsed = useMemo(() => parseQuickQuestions(ownText), [ownText]);
   const ownReady = source === "own" && parsed.count > 0 && parsed.errors.length === 0;
-  const canCreate = source === "builtin" ? !!setId : ownReady;
+  const canCreate = source === "builtin" ? !!setId : source === "ai" ? !!aiSet : ownReady;
 
   const create = async (e) => {
     e.preventDefault();
     setError("");
     setBusy(true);
     try {
-      let chosenSetId = setId;
+      let chosenSetId = source === "ai" ? aiSet.id : setId;
       if (source === "own") {
         const saved = await api.post("/sets", { title: ownTitle.trim() || "My questions", questionTime: questionTime || 20, questions: parsed.questions });
         chosenSetId = saved.id;
@@ -153,7 +153,7 @@ export default function HostCreate() {
                 </div>
               )
             ) : source === "ai" ? (
-              <AiQuestions onUse={useAiSet} />
+              <AiQuestions onUse={useAiSet} chosenId={aiSet?.id} />
             ) : (
               <div className="mt-4 flex flex-col gap-4">
                 <Field id="own-title" label="Set name">
@@ -227,7 +227,15 @@ export default function HostCreate() {
             <Button type="submit" size="lg" disabled={!canCreate || busy}>
               {busy ? "Creating room" : "Create room"}
             </Button>
-            <span className="text-sm text-muted">{source === "own" ? "Your questions are saved so you can use them again." : "You can start as soon as the first player joins."}</span>
+            <span className="text-sm text-muted">
+              {source === "ai"
+                ? aiSet
+                  ? `The room will play only "${aiSet.title}", ${aiSet.questions.length} questions written by AI.`
+                  : "Write questions with AI first."
+                : source === "own"
+                  ? "Your questions are saved so you can use them again."
+                  : "You can start as soon as the first player joins."}
+            </span>
           </div>
         </form>
       </div>
