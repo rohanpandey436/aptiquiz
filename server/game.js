@@ -7,6 +7,7 @@ export const RTT_CAP_MS = 400;
 const GRACE_MS = 60;
 const ALL_ANSWERED_DELAY_MS = 900;
 export const REVEAL_DELAY_MS = 8000;
+export const MIN_REACTION_MS = 250;
 export const BASE_POINTS = 500;
 export const BONUS_POINTS = 500;
 export const EXAM_PENALTY = 250;
@@ -97,7 +98,7 @@ export class GameManager {
       qIndex: -1,
       q: null,
       rounds: [],
-      stats: { rejectedLate: 0, rejectedDuplicate: 0, rejectedInvalid: 0, accepted: 0 },
+      stats: { rejectedLate: 0, rejectedDuplicate: 0, rejectedInvalid: 0, rejectedEarly: 0, accepted: 0 },
       createdAt: Date.now(),
       startedAt: null,
       endedAt: null,
@@ -432,6 +433,10 @@ export class GameManager {
     }
     const question = room.questions[qIndex];
     const raw = this.now() - room.q.startedAt;
+    if (raw < MIN_REACTION_MS) {
+      room.stats.rejectedEarly++;
+      return { accepted: false, reason: "early" };
+    }
     const comp = Math.min(player.rtt || 0, RTT_CAP_MS);
     const elapsed = Math.max(0, raw - comp);
     if (elapsed > room.q.durationMs) {

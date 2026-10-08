@@ -69,7 +69,7 @@ Late answers are judged on the compensated time, so two players who tap at the s
 - Options are shuffled per player per question on the server. Copying a neighbour's "B" does not help.
 - The correct answer is not sent to any browser until the round closes. The live counter only reports how many answered, never who was right.
 - One answer per player per question. The first accepted answer is final; duplicates and stale question indexes are dropped and counted.
-- Late answers are rejected on the compensated clock.
+- Late answers are rejected on the compensated clock. Answers that arrive within 250 ms of the question starting, faster than any reader, are rejected as too early and the player may answer again; the phone also ignores taps for the first 350 ms after a question appears so a tap carried over from the previous screen cannot register.
 - Every socket is rate-limited with a token bucket (20 events per second). Payload size is capped at 10 KB.
 - All host actions require the room's host token, which only the creating browser holds.
 - A player who hides the tab during a question is flagged to the host, who sees the count on the reveal and results screens and in the CSV export.

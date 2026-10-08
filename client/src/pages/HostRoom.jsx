@@ -601,7 +601,11 @@ function FairnessPanel({ fairness }) {
         <Stat label="Average connection delay" value={`${fairness.avgRttMs} ms`} sub="Round trip, measured by the server" />
         <Stat label="Slowest connection" value={`${fairness.maxRttMs} ms`} sub={`Compensation capped at ${fairness.rttCapMs} ms`} />
         <Stat label="Answers accepted" value={fairness.accepted} tone="good" />
-        <Stat label="Rejected" value={fairness.rejectedLate + fairness.rejectedDuplicate + fairness.rejectedInvalid} sub={`${fairness.rejectedLate} late, ${fairness.rejectedDuplicate} duplicate, ${fairness.rejectedInvalid} invalid`} />
+        <Stat
+          label="Rejected"
+          value={fairness.rejectedLate + fairness.rejectedDuplicate + fairness.rejectedInvalid + (fairness.rejectedEarly || 0)}
+          sub={`${fairness.rejectedLate} late, ${fairness.rejectedDuplicate} duplicate, ${fairness.rejectedEarly || 0} too early, ${fairness.rejectedInvalid} invalid`}
+        />
       </div>
       <p className="text-sm text-muted">
         The server timed every round and scored every answer. Each player's measured round-trip delay was subtracted from their answer time, so two players who tapped at

@@ -174,6 +174,9 @@ export default function Play() {
         setLock({ late: true });
       } else if (res.reason === "duplicate") {
         setLock({ elapsedMs: null });
+      } else if (res.reason === "early") {
+        setSelected(null);
+        setError("That tap landed before the question had loaded. Take a look and answer again.");
       } else {
         setSelected(null);
         setError(res.error || "Your answer did not go through. Tap again.");
@@ -411,8 +414,16 @@ function EndPracticeButton({ onClick }) {
   );
 }
 
+const SETTLE_MS = 350;
+
 function QuestionView({ question, selected, lock, progress, standings, me, onAnswer, onEndPractice }) {
   const locked = selected !== null;
+  const [settled, setSettled] = useState(false);
+  useEffect(() => {
+    setSettled(false);
+    const id = setTimeout(() => setSettled(true), SETTLE_MS);
+    return () => clearTimeout(id);
+  }, [question.qIndex]);
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
       <div className="flex flex-col gap-4">
@@ -430,7 +441,7 @@ function QuestionView({ question, selected, lock, progress, standings, me, onAns
         </Card>
         <div className="grid gap-3">
           {question.options.map((opt, i) => (
-            <OptionTile key={`${question.qIndex}-${i}`} index={i} text={opt} state={selected === i ? "selected" : "idle"} onClick={() => onAnswer(i)} disabled={locked} delay={i * 60} />
+            <OptionTile key={`${question.qIndex}-${i}`} index={i} text={opt} state={selected === i ? "selected" : "idle"} onClick={() => settled && onAnswer(i)} disabled={locked} delay={i * 60} />
           ))}
         </div>
         <div aria-live="polite" className="min-h-6 text-center text-sm font-bold text-muted">

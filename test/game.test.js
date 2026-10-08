@@ -37,6 +37,10 @@ function setup({ examMode = false, questionTime = 10, autoAdvance = false } = {}
   return { io, game, room, a, b };
 }
 
+function afterReading(game, room, ms = 1_000) {
+  game.now = () => room.q.startedAt + ms;
+}
+
 test("room codes avoid confusable characters and are unique", () => {
   const { game } = setup();
   const codes = new Set(Array.from({ length: 200 }, () => game.genCode()));
@@ -94,6 +98,7 @@ test("players see shuffled options and the correct answer is never in the payloa
 test("a position answer is mapped back through the player's own permutation", () => {
   const { game, room, a } = setup();
   game.startGame(room);
+  afterReading(game, room);
   const question = room.questions[0];
   const correctPos = a.perms.get(0).indexOf(question.correct);
   const res = game.submitAnswer(room, a, 0, correctPos);
@@ -104,13 +109,14 @@ test("a position answer is mapped back through the player's own permutation", ()
 test("scoring rewards speed and exam mode penalises wrong answers", () => {
   const { game, room, a, b } = setup({ examMode: true, questionTime: 10 });
   game.startGame(room);
+  afterReading(game, room);
   const question = room.questions[0];
   const correctPos = a.perms.get(0).indexOf(question.correct);
   const wrongPos = (b.perms.get(0).indexOf(question.correct) + 1) % question.options.length;
   game.submitAnswer(room, a, 0, correctPos);
   game.submitAnswer(room, b, 0, wrongPos);
   const fast = room.q.answers.get(a.id);
-  assert.ok(fast.points > BASE_POINTS + BONUS_POINTS * 0.9, "an instant correct answer earns almost the full bonus");
+  assert.ok(fast.points > BASE_POINTS + BONUS_POINTS * 0.85, "a one-second correct answer earns almost the full bonus");
   assert.equal(room.q.answers.get(b.id).points, -EXAM_PENALTY);
   game.closeQuestion(room);
   assert.equal(b.score, -EXAM_PENALTY);
@@ -120,6 +126,7 @@ test("scoring rewards speed and exam mode penalises wrong answers", () => {
 test("second answers, stale questions and invalid positions are rejected", () => {
   const { game, room, a } = setup();
   game.startGame(room);
+  afterReading(game, room);
   assert.equal(game.submitAnswer(room, a, 0, 0).accepted, true);
   assert.equal(game.submitAnswer(room, a, 0, 1).reason, "duplicate");
   assert.equal(game.submitAnswer(room, a, 3, 0).reason, "stale");
@@ -128,6 +135,17 @@ test("second answers, stale questions and invalid positions are rejected", () =>
   assert.equal(game.submitAnswer(room, a, 1, 99).reason, "invalid");
   assert.equal(room.stats.rejectedDuplicate, 1);
   assert.equal(room.stats.rejectedInvalid, 2);
+});
+
+test("an answer that arrives faster than a human could read is rejected and can be retried", () => {
+  const { game, room, a } = setup({ questionTime: 10 });
+  game.startGame(room);
+  const started = room.q.startedAt;
+  game.now = () => started + 40;
+  assert.equal(game.submitAnswer(room, a, 0, 0).reason, "early");
+  assert.equal(room.stats.rejectedEarly, 1);
+  game.now = () => started + 900;
+  assert.equal(game.submitAnswer(room, a, 0, 0).accepted, true);
 });
 
 test("late answers are judged on the compensated clock", () => {
@@ -152,6 +170,7 @@ test("round-trip compensation is capped", () => {
 test("the question closes early once every connected player has answered", async () => {
   const { game, room, a } = setup();
   game.startGame(room);
+  afterReading(game, room);
   game.submitAnswer(room, a, 0, 0);
   game.handleDisconnect("sb");
   await new Promise((r) => setTimeout(r, 1_100));
@@ -161,6 +180,7 @@ test("the question closes early once every connected player has answered", async
 test("a player who comes back before the early close keeps the round open", async () => {
   const { game, room, a, b } = setup();
   game.startGame(room);
+  afterReading(game, room);
   game.submitAnswer(room, a, 0, 0);
   game.handleDisconnect("sb");
   assert.ok(room.q.earlyTimer, "early close armed while Bilal is away");
