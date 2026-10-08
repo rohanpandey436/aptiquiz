@@ -49,6 +49,13 @@ if (fs.existsSync(distDir)) {
   });
 }
 
+app.use((err, _req, res, _next) => {
+  if (err?.type === "entity.parse.failed") return res.status(400).json({ error: "Invalid JSON body" });
+  if (err?.type === "entity.too.large") return res.status(413).json({ error: "Request body too large" });
+  console.error(err);
+  res.status(500).json({ error: "Server error" });
+});
+
 const keepAliveUrl = process.env.KEEPALIVE_URL || (process.env.RENDER_EXTERNAL_URL ? `${process.env.RENDER_EXTERNAL_URL}/api/health` : "");
 if (keepAliveUrl) {
   setInterval(() => fetch(keepAliveUrl).catch(() => {}), 10 * 60 * 1000).unref();

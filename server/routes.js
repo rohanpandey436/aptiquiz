@@ -75,10 +75,5 @@ export function createRouter(game) {
     res.status(404).json({ error: "Not found" });
   });
 
-  router.use((err, _req, res, _next) => {
-    const status = err.type === "entity.parse.failed" ? 400 : 500;
-    res.status(status).json({ error: status === 400 ? "Invalid JSON body" : "Server error" });
-  });
-
   return router;
 }

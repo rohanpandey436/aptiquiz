@@ -95,6 +95,10 @@ Every timestamp is kept per answer, which makes the end-of-game analysis cheap:
 
 Hosts get per-question correct rates, the three hardest questions, topic accuracy for the room, every player's summary with tab-switch counts, a fairness panel with measured delays and rejected answers, and a CSV export.
 
+## Deployment
+
+One Render web service runs `npm start` after `npm ci && npm run build`. The same process serves the static client, the REST API and the websocket, so there is one URL and no CORS. Secrets never enter the repository: `.env.example` lists every variable, and the only one with a default that matters is `HOST_PASSCODE`. Free instances sleep when idle, so the server fetches its own `/api/health` every 10 minutes while `RENDER_EXTERNAL_URL` or `KEEPALIVE_URL` is set, which keeps a judge's first load fast.
+
 ## Testing at 50 players
 
 `npm run loadtest -- --url=<server> --players=50 --fast` creates a room, joins 50 bots, plays a full game with the host automated, and checks that every bot received every question and reveal, that duplicate and late answers were rejected, that a bot which disconnects and resumes keeps its seat, and that the final leaderboard is sorted and complete. It prints join and answer-acknowledgement latency percentiles. Results are recorded in the README.

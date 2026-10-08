@@ -103,7 +103,7 @@ The script creates a room, joins 50 bots, plays a full game, and checks that eve
 
 Run on 8 October 2026 against a local server (`node scripts/loadtest.js --url=http://localhost:3000 --players=50 --fast`). The same command against the live URL is in the deployment notes below once the service is up.
 
-Deployment: `render.yaml` describes a single free web service (build `npm ci && npm run build`, start `npm start`). Push to `main` and Render redeploys.
+Deployment: `render.yaml` describes a single free web service (build `npm ci && npm run build`, start `npm start`). Push to `main` and Render redeploys. Free instances sleep after idle time, so the server pings its own health endpoint every 10 minutes while `RENDER_EXTERNAL_URL` (set by Render) or `KEEPALIVE_URL` is present.
 
 ## Tools and AI used
 
