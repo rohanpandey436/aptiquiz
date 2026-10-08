@@ -358,6 +358,7 @@ test("a practice player can end the session early, a hosted-game player cannot",
 
 test("answer keys are hidden for sets that are being played", () => {
   const { game, room } = setup();
+  room.practice = false;
   assert.ok(game.setsInPlay().has("seed_lightning"));
   const locked = store.withoutAnswers(store.getSet("seed_lightning"));
   assert.equal(locked.locked, true);
@@ -397,4 +398,32 @@ test("a practice player moves on when ready, a hosted-game player cannot", () =>
   const h = game.joinPlayer(hosted, fakeSocket("hp"), "Rohan", "10.0.0.8").player;
   game.startGame(hosted);
   assert.ok(game.nextPractice(hosted, h).error);
+});
+
+test("kicking bans the name, and the address only when nobody else in the room shares it", () => {
+  const { game, room, a, b } = setup();
+  game.joinPlayer(room, fakeSocket("sc"), "Chitra", "10.0.0.1");
+  assert.equal(game.kickPlayer(room, a.id), true);
+  assert.ok(game.joinPlayer(room, fakeSocket("sd"), "Dev", "10.0.0.1").player, "a shared address stays open");
+  assert.ok(game.joinPlayer(room, fakeSocket("se"), "Asha", "10.0.0.5").error, "the kicked name stays banned");
+  assert.equal(game.kickPlayer(room, b.id), true);
+  assert.ok(game.joinPlayer(room, fakeSocket("sf"), "Esha", "10.0.0.2").error, "an address nobody else uses is banned");
+});
+
+test("a practice room does not lock a set's answer key, a hosted room does", () => {
+  const io = fakeIo();
+  const game = new GameManager(io);
+  managers.push(game);
+  const { room } = game.createRoom({ college: "Practice", setId: "seed_lightning", questionTime: 10, practice: true });
+  game.joinPlayer(room, fakeSocket("solo3"), "Rohan", "10.0.0.9");
+  game.startGame(room);
+  assert.equal(game.setsInPlay().has("seed_lightning"), false);
+  game.createRoom({ college: "Test College", setId: "seed_lightning", questionTime: 10 });
+  assert.equal(game.setsInPlay().has("seed_lightning"), true);
+});
+
+test("built-in sets cannot be deleted", () => {
+  assert.equal(store.deleteSet("seed_lightning"), "seed");
+  assert.ok(store.getSet("seed_lightning"));
+  assert.equal(store.deleteSet("no_such_set"), false);
 });

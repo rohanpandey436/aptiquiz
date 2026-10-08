@@ -1,6 +1,6 @@
 # AptiQuiz architecture
 
-AptiQuiz is a real-time multiplayer aptitude quiz for up to 50 players per room. This document explains how it is built, why each choice was made, and where the fairness and anti-cheat guarantees come from.
+AptiQuiz is a real-time multiplayer aptitude quiz for rooms of up to 50 players (the server caps a room at 60 so a few extra joiners are never locked out). This document explains how it is built, why each choice was made, and where the fairness and anti-cheat guarantees come from.
 
 ## The one-line version
 
@@ -33,8 +33,8 @@ One Node.js process is the referee. It owns the clock, the question order, every
 | Persistence | `server/store.js` | JSON files for question sets and finished games, written atomically. Seeds the built-in sets on first start. |
 | Validation | `server/validate.js` | Sanitizers for names, codes, tokens, integers, question sets, plus a token-bucket rate limiter. |
 | Access | `server/auth.js` | Optional editor passcode (faculty mode) with digest comparison and a per-address limit on wrong attempts. |
-| Seed data | `server/seed/questions.js` | 54 verified questions across quantitative, logical, verbal and data interpretation, grouped into six sets. |
-| Client | `client/src` | React + Vite + Tailwind. Pages: Home, HostCreate, HostRoom (control room for the host, big layout for the projector), Play, Practice, League, Sets. Components: Timer, OptionTile, Leaderboard, QuestionBody, AiQuestions, NetworkPet, Layout, ui. |
+| Seed data | `server/seed/questions.js` | A bank of 60 questions written for this project across quantitative, logical, verbal and data interpretation, each tagged easy, medium or hard with a worked explanation, grouped into nine sets: a demo round, a balanced mix, one per level and one per topic. |
+| Client | `client/src` | React + Vite + Tailwind. Pages: Home, HostCreate, HostRoom (control room for the host, big layout for the projector), Play, Practice, League, Sets, NotFound. Components: Timer, OptionTile, Leaderboard, QuestionBody, AiQuestions, RoomSettings, NetworkPet, Confetti, ErrorBoundary, Layout, ui. |
 | Load test | `scripts/loadtest.js` | Spawns N bot players with socket.io-client, plays a full game, verifies delivery, rejections and leaderboard consistency. |
 
 ## Why these choices
@@ -43,7 +43,7 @@ One Node.js process is the referee. It owns the clock, the question order, every
 
 **One process, in-memory game state.** The game loop never waits on a database. A room is a JavaScript object with its own timers. Finished games and question sets are flushed to JSON files through `store.js`, which is the only module that knows where data lives. Swapping JSON for Postgres means changing that one module. On Render's free tier the disk is ephemeral, so the league resets on redeploy; that is documented, not hidden.
 
-**React + Vite + Tailwind.** The host screen and the phone screen share the same components (Timer, OptionTile, Leaderboard) with different sizes. Framer Motion animates leaderboard reordering. Tailwind keeps styling consistent and the bundle small. The design is white, high-contrast, large type, and every status uses an icon or label as well as a colour.
+**React + Vite + Tailwind.** The host screen and the phone screen share the same components (Timer, OptionTile, Leaderboard) with different sizes. Framer Motion animates leaderboard reordering. Tailwind keeps styling consistent and the bundle small. The design is high-contrast and large type, with a light theme by default and a dark theme drawn from the same token sheet, and every status uses an icon or label as well as a colour.
 
 **Same origin for API and websockets.** The server serves the built client from `dist/`, so there is no CORS, no second deployment, and the join link printed on the host screen is simply the live URL plus the room code.
 
@@ -99,7 +99,7 @@ Hosts get per-question correct rates, the three hardest questions, topic accurac
 
 ## Deployment
 
-One Render web service runs `npm start` after `npm ci && npm run build`. The same process serves the static client, the REST API and the websocket, so there is one URL and no CORS. Secrets never enter the repository: `.env.example` lists every variable, and the only one with a default that matters is `HOST_PASSCODE`. Free instances sleep when idle, so the server fetches its own `/api/health` every 10 minutes while `RENDER_EXTERNAL_URL` or `KEEPALIVE_URL` is set, which keeps a judge's first load fast.
+One Render web service runs `npm start` after `npm ci && npm run build`. The same process serves the static client, the REST API and the websocket, so there is one URL and no CORS. Secrets never enter the repository: `.env.example` lists every variable, and all of them are optional. Free instances sleep when idle, so the server fetches its own `/api/health` every 10 minutes while `RENDER_EXTERNAL_URL` or `KEEPALIVE_URL` is set, so the first load stays fast for visitors.
 
 ## Testing at 50 players
 

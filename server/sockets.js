@@ -80,6 +80,8 @@ export function attachSockets(io, game) {
     });
 
     on("practice:start", (payload, ack) => {
+      const current = playerRef();
+      if (current?.room.practice && current.room.status !== "ended") game.endPractice(current.room, current.player);
       const setId = cleanId(payload?.setId);
       if (!setId) return reply(ack, { ok: false, error: "Pick a question set" });
       const name = cleanName(payload?.name) || "You";

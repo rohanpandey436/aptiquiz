@@ -13,7 +13,7 @@ import { Countdown, LEVEL_CHOICES, TIME_CHOICES, Toggle } from "../components/Ro
 import { api } from "../lib/api.js";
 import { request, socket, useSocketEvents } from "../lib/socket.js";
 import { hostSeat } from "../lib/storage.js";
-import { LETTERS, downloadCsv, joinUrl, seconds, topicLabel } from "../lib/format.js";
+import { LETTERS, downloadCsv, joinUrl, levelLabel, seconds, topicLabel } from "../lib/format.js";
 
 const withAutoNext = (reveal) => ({ ...reveal, autoNextAt: typeof reveal.autoNextMs === "number" ? Date.now() + reveal.autoNextMs : null });
 
@@ -31,6 +31,8 @@ export default function HostRoom({ spectator = false }) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const inflight = useRef(false);
+  const phaseRef = useRef(phase);
+  phaseRef.current = phase;
 
   const applyState = useCallback((state) => {
     if (state.lobby) setLobby(state.lobby);
@@ -48,6 +50,7 @@ export default function HostRoom({ spectator = false }) {
   }, []);
 
   const resume = useCallback(async () => {
+    if (phaseRef.current === "ended") return;
     if (spectator) {
       const res = await request("spectator:join", { code });
       if (!res.ok) {
@@ -133,7 +136,7 @@ export default function HostRoom({ spectator = false }) {
     if (spectator) return undefined;
     const onKey = (e) => {
       if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
-      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
+      if (e.target.closest("input, textarea, select, button, a")) return;
       if (phase === "reveal" && (e.key === "Enter" || e.key === "ArrowRight")) act("host:next");
     };
     window.addEventListener("keydown", onKey);
@@ -217,7 +220,7 @@ function CodeBlock({ code, lobby }) {
         <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-onblue">Join at</p>
         <p className="mt-1 text-xl font-bold md:text-2xl">{url.replace(/^https?:\/\//, "")}</p>
         <p className="mt-6 text-[11px] font-extrabold uppercase tracking-[0.14em] text-onblue">Room code</p>
-        <p className="display mt-1 text-[64px] font-extrabold leading-none tracking-[0.18em] lg:text-8xl" aria-label={`Room code ${code.split("").join(" ")}`}>
+        <p className="display mt-1 text-[44px] font-extrabold leading-none tracking-[0.18em] sm:text-[64px] lg:text-8xl" aria-label={`Room code ${code.split("").join(" ")}`}>
           {code}
         </p>
         <p className="mt-6 text-[11px] font-extrabold uppercase tracking-[0.14em] text-onblue">Or scan</p>
@@ -302,7 +305,7 @@ function SettingsPanel({ lobby, onUpdate, busy }) {
   const [sets, setSets] = useState(null);
   const [college, setCollege] = useState(lobby.college);
   useEffect(() => {
-    api.get("/sets").then(setSets).catch(() => setSets([]));
+    api.get("/sets").then(setSets).catch(() => setSets(null));
   }, []);
   return (
     <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -310,7 +313,7 @@ function SettingsPanel({ lobby, onUpdate, busy }) {
         <select id="lobby-set" className={inputClass} value={lobby.setId} onChange={(e) => onUpdate({ setId: e.target.value })} disabled={busy || !sets}>
           {(sets || [{ id: lobby.setId, title: lobby.setTitle, count: lobby.questionCount }]).map((s) => (
             <option key={s.id} value={s.id}>
-              {s.title} ({s.count} Qs)
+              {s.title} ({s.count} Qs{s.ai ? ", written by AI" : ""})
             </option>
           ))}
         </select>
@@ -356,7 +359,7 @@ function StatusStrip({ phase, q, reveal, progress, standings }) {
   const pct = progress.playerCount ? Math.round((100 * progress.answeredCount) / progress.playerCount) : 0;
   return (
     <div className="grid gap-3 sm:grid-cols-3">
-      <Stat label="Question" value={`${q.qIndex + 1} of ${q.total}`} sub={`${topicLabel(q.topic)} / ${q.difficulty}`} />
+      <Stat label="Question" value={`${q.qIndex + 1} of ${q.total}`} sub={`${topicLabel(q.topic)} / ${levelLabel(q.difficulty)}`} />
       {phase === "question" ? (
         <Stat
           label="Answered"
@@ -562,7 +565,7 @@ function EndView({ end, code, spectator }) {
       ];
 
   const exportCsv = () => {
-    const rows = [["Rank", "Name", "Score", "Correct", "Wrong", "Skipped", "Accuracy %", "Avg speed (s)", "Best topic", "Weakest topic", "Tab switches"]];
+    const rows = [["Rank", "Name", "Score", "Correct", "Wrong", "Skipped", "Accuracy %", "Avg speed (s)", "Best topic", "Topic to work on", "Left the tab"]];
     for (const p of insights.players || []) {
       rows.push([p.rank, p.name, p.score, p.correct, p.wrong, p.skipped, p.accuracy, p.avgSpeedS ?? "", p.bestTopic ? topicLabel(p.bestTopic) : "", p.weakestTopic ? topicLabel(p.weakestTopic) : "", p.tabSwitches ?? 0]);
     }
@@ -605,7 +608,7 @@ function EndView({ end, code, spectator }) {
             {i === 0 ? <Confetti pieces={20} /> : null}
             <div className="relative">
               <div className="flex items-center gap-3">
-                <span className={`display flex h-12 w-12 items-center justify-center rounded-full text-xl font-bold ${i === 0 ? "bg-accent text-ink" : i === 1 ? "bg-ink text-canvas" : "bg-muted text-white"}`}>{i + 1}</span>
+                <span className={`display flex h-12 w-12 items-center justify-center rounded-full text-xl font-bold ${i === 0 ? "bg-accent text-on-accent" : i === 1 ? "bg-ink text-canvas" : "bg-muted text-canvas"}`}>{i + 1}</span>
                 <p className={`text-[11px] font-extrabold uppercase tracking-[0.14em] ${i === 0 ? "text-onblue" : "text-muted"}`}>{["Winner", "Second", "Third"][i]}</p>
               </div>
               <p className={`display mt-4 truncate font-bold ${i === 0 ? "text-3xl lg:text-4xl" : "text-2xl"}`}>{p.name}</p>
@@ -652,8 +655,8 @@ function EndView({ end, code, spectator }) {
                       <th className="px-3 py-2">Accuracy</th>
                       <th className="px-3 py-2">Avg speed</th>
                       <th className="px-3 py-2">Best topic</th>
-                      <th className="px-3 py-2">Weakest topic</th>
-                      <th className="px-3 py-2">Tab left</th>
+                      <th className="px-3 py-2">Topic to work on</th>
+                      <th className="px-3 py-2">Left the tab</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -663,7 +666,7 @@ function EndView({ end, code, spectator }) {
                         <td className="px-3 py-2 font-semibold">{p.name}</td>
                         <td className="px-3 py-2 tabular">{p.score}</td>
                         <td className="px-3 py-2 tabular">{p.accuracy}%</td>
-                        <td className="px-3 py-2 tabular">{p.avgSpeedS ?? "-"} s</td>
+                        <td className="px-3 py-2 tabular">{p.avgSpeedS == null ? "-" : `${p.avgSpeedS} s`}</td>
                         <td className="px-3 py-2">{p.bestTopic ? topicLabel(p.bestTopic) : "-"}</td>
                         <td className="px-3 py-2">{p.weakestTopic ? topicLabel(p.weakestTopic) : "-"}</td>
                         <td className="px-3 py-2 tabular">{p.tabSwitches || 0}</td>
@@ -693,7 +696,7 @@ function QuestionInsights({ questions }) {
             <Badge tone={q.pctCorrect >= 70 ? "good" : q.pctCorrect >= 40 ? "warm" : "bad"}>{q.pctCorrect}% correct</Badge>
           </div>
           <p className="mt-1 text-xs text-muted">
-            {topicLabel(q.topic)} / {q.difficulty} / average {seconds(q.avgElapsedMs)} / answer: {q.options[q.correct]}
+            {topicLabel(q.topic)} / {levelLabel(q.difficulty)} / average {seconds(q.avgElapsedMs)} / answer: {q.options[q.correct]}
           </p>
         </li>
       ))}

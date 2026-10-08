@@ -212,9 +212,11 @@ export default function Sets() {
                 <Button size="sm" variant="secondary" onClick={() => duplicate(s.id)} disabled={busy}>
                   Duplicate
                 </Button>
-                <Button size="sm" variant="danger" onClick={() => remove(s)} disabled={busy}>
-                  Delete
-                </Button>
+                {s.seed ? null : (
+                  <Button size="sm" variant="danger" onClick={() => remove(s)} disabled={busy}>
+                    Delete
+                  </Button>
+                )}
               </div>
             </Card>
           ))}
@@ -360,7 +362,7 @@ function Editor({ set, onChange, onSave, onCancel, busy, message }) {
                     <span className="w-6 text-sm font-bold text-muted">{LETTERS[i]}</span>
                     <input className={inputClass} value={opt} onChange={(e) => updateQuestion(active, { options: q.options.map((o, idx) => (idx === i ? e.target.value : o)) })} maxLength={200} aria-label={`Option ${LETTERS[i]} text`} />
                     {q.options.length > 2 ? (
-                      <button type="button" onClick={() => updateQuestion(active, { options: q.options.filter((_, idx) => idx !== i), correct: Math.min(q.correct, q.options.length - 2) })} className="px-1 text-muted hover:text-bad-ink" aria-label={`Remove option ${LETTERS[i]}`}>
+                      <button type="button" onClick={() => updateQuestion(active, { options: q.options.filter((_, idx) => idx !== i), correct: i < q.correct ? q.correct - 1 : i === q.correct ? 0 : q.correct })} className="px-1 text-muted hover:text-bad-ink" aria-label={`Remove option ${LETTERS[i]}`}>
                         &#10005;
                       </button>
                     ) : null}
@@ -383,7 +385,7 @@ function Editor({ set, onChange, onSave, onCancel, busy, message }) {
                   ))}
                 </select>
               </Field>
-              <Field id="q-diff" label="Difficulty">
+              <Field id="q-diff" label="Level">
                 <select id="q-diff" className={inputClass} value={q.difficulty} onChange={(e) => updateQuestion(active, { difficulty: e.target.value })} disabled={locked}>
                   {DIFFICULTIES.map((d) => (
                     <option key={d} value={d}>

@@ -6,6 +6,7 @@ import { seedSets } from "./seed/questions.js";
 import { validateSet } from "./validate.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
+const MAX_SETS = 100;
 
 let dataDir = null;
 let setsFile = null;
@@ -83,6 +84,7 @@ export function saveSet(raw, { ai = false } = {}) {
   const { errors, set: cleaned } = validateSet(raw, newId);
   if (errors.length) return { ok: false, errors };
   const existing = cleaned.id ? getSet(cleaned.id) : null;
+  if (!existing && sets.length >= MAX_SETS) return { ok: false, errors: ["The question library is full. Delete a set you no longer need first."] };
   const now = new Date().toISOString();
   const set = {
     ...cleaned,
@@ -117,9 +119,10 @@ export function duplicateSet(id) {
 }
 
 export function deleteSet(id) {
-  const before = sets.length;
+  const target = getSet(id);
+  if (!target) return false;
+  if (target.seed) return "seed";
   sets = sets.filter((s) => s.id !== id);
-  if (sets.length === before) return false;
   writeJson(setsFile, sets);
   return true;
 }

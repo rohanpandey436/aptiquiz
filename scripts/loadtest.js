@@ -71,7 +71,6 @@ async function spawnPlayer(index, code, behaviour) {
   });
   socket.on("question:start", async (q) => {
     stats.questionsSeen.set(q.qIndex, (stats.questionsSeen.get(q.qIndex) || 0) + 1);
-    if (q.answered) return;
     seen.questions++;
     questionDone = false;
     const thinkMs = FAST ? rand(300, 500) : rand(300, Math.max(400, q.durationMs - 600));

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 
-export const socket = io({ autoConnect: true, transports: ["websocket", "polling"] });
+export const socket = io({ autoConnect: true, transports: ["websocket", "polling"], tryAllTransports: true });
 
 socket.on("rtt:probe", (ack) => {
   if (typeof ack === "function") ack();
@@ -38,6 +38,5 @@ export function useSocketEvents(handlers, deps = []) {
     return () => {
       for (const [event, fn] of entries) socket.off(event, fn);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 }

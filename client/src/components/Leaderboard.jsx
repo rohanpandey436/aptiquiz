@@ -13,9 +13,9 @@ function Movement({ delta }) {
 }
 
 const rankChip = (rank) => {
-  if (rank === 1) return "bg-accent text-ink";
+  if (rank === 1) return "bg-accent text-on-accent";
   if (rank === 2) return "bg-ink text-canvas";
-  if (rank === 3) return "bg-muted text-white";
+  if (rank === 3) return "bg-muted text-canvas";
   return "bg-surface-2 text-ink";
 };
 

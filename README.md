@@ -14,13 +14,13 @@ AptiQuiz turns aptitude practice into a live game. A host creates a room from a 
 |---|---|
 | ![Home page](docs/screenshots/home.jpg) | ![Host lobby with room code and QR](docs/screenshots/host-lobby.jpg) |
 
-| Projector view during a reveal | League on a phone |
+| Host control room at a reveal | Projector view during a reveal |
 |---|---|
-| ![Projector view during a reveal](docs/screenshots/host-question.jpg) | ![League page on a phone](docs/screenshots/league.jpg) |
+| ![Host control room with counts per option and live standings](docs/screenshots/host-control-room.jpg) | ![Projector view during a reveal](docs/screenshots/host-question.jpg) |
 
-| Player question | Player reveal | Player report card |
-|---|---|---|
-| ![Player question on a phone](docs/screenshots/player-question.jpg) | ![Player reveal on a phone](docs/screenshots/player-reveal.jpg) | ![Player report card on a phone](docs/screenshots/player-report.jpg) |
+| League on a phone | Player question | Player reveal | Player report card |
+|---|---|---|---|
+| ![League page on a phone](docs/screenshots/league.jpg) | ![Player question on a phone](docs/screenshots/player-question.jpg) | ![Player reveal on a phone](docs/screenshots/player-reveal.jpg) | ![Player report card on a phone](docs/screenshots/player-report.jpg) |
 
 ## Done / Left / Plan
 
@@ -29,7 +29,7 @@ AptiQuiz turns aptitude practice into a live game. A host creates a room from a 
 - Rooms with short join codes and a QR code, a live lobby, host start. The host picks a level (mixed, easy, medium or hard) and can change the set, level, pace, exam mode and auto-advance in the lobby before starting.
 - Ask AI for questions: on the Host and Practice pages a host types a topic such as "Percentages" or "Blood relations", picks how many questions and the level, and gets a ready set with answers and explanations to read through before using it. The set is saved like any other and marked "Written by AI" everywhere it appears. Needs an API key on the server; without one the option is hidden.
 - Host control room: while a game runs the host sees the question and its options in a compact form, the live count of answers, who is away, the time left, and the full standings with movement arrows at all times, with one large End round button. The projector view keeps the big, player-style layout.
-- Practice mode: play any set alone at a relaxed, normal or fast pace, with the same report card at the end. Each answer moves on by itself after 8 seconds or the moment you press Enter, and the practice can be ended from the top bar at any time. Practice games are never counted in the league.
+- Practice mode: play any set alone at a relaxed, normal or fast pace, with the same report card at the end. Before starting, the player chooses whether each answer moves on by itself after 8 seconds or waits for Enter; Enter or Next always moves on at once, and the practice can be ended from the top bar at any time. Practice games are never counted in the league.
 - Light theme by default, with a dark theme one tap away in the header that lasts for the browser session. Every colour comes from one token sheet, so both themes keep the same contrast rules.
 - Error handling throughout: an offline screen and a long-reconnect screen with a drawn mascot, a crash page that keeps the game safe, plain-language messages when the server is unreachable or waking up, Try again on every page that loads data, and a fallback when a question image does not load.
 - Live play: server-timed countdown, per-player shuffled options, answer lock-in with the measured answer time, live "answered" counter. Auto-advance by default: the server starts the next question 8 seconds after each reveal with a countdown on every screen; the host can skip ahead or pause.
@@ -41,7 +41,7 @@ AptiQuiz turns aptitude practice into a live game. A host creates a room from a 
 - Server as referee, latency compensation, reconnection with the same score, cheating resistance (details below). Our own review pass found and fixed: a seat token being lost on a request timeout, a double "next" closing a fresh question, ghost seats when one connection joined twice, an early-close timer surviving a player's return, tie-breaks that favoured skipping, late-joiner maths, and a spectator payload that carried private reports.
 - 50-player simulation script, results below.
 - Projector view at `/watch/CODE`: a read-only second screen that follows the game. It receives standings and question statistics, never players' private reports.
-- Mobile-first layout, keyboard answering (keys 1 to 4), labelled controls, colour plus icon for every status.
+- Mobile-first layout, keyboard answering (keys 1 to 6 or A to F), labelled controls, colour plus icon for every status.
 
 **Left**
 - Persist league and question sets in Postgres instead of JSON files, so data survives redeploys.
@@ -67,7 +67,7 @@ Why React, Vite and Tailwind: the host screen and the phone screen share the sam
 
 **Fairness under network delay, in plain words.** A question takes one trip to reach your phone and your tap takes one trip to come back, so your raw time includes a whole round trip of network delay. The server measures each player's round-trip time itself, with a timed probe every few seconds, and subtracts the smallest recent measurement from the answer time, capped at 400 ms. Two players who tap at the same instant on different connections therefore get the same time. Because the server measures, nobody can report a fake delay; because of the cap, deliberately slowing your probe replies buys at most 400 ms, about 10 points on a 20-second question, and it shows in the host's fairness panel.
 
-**Cheating resistance.** Options are shuffled per player per question on the server, so copying a neighbour's letter does not help. The correct answer is never sent before the reveal; the live counter only says how many answered. The first answer is final; duplicates, stale and late answers are dropped and counted, and so is any answer whose compensated time is faster than a person could have read the question, which the player can then answer again. Every socket is rate-limited, payloads are capped at 10 KB, one connection holds one seat, and a kicked player cannot rejoin under the same name or address. Host actions need the room's host token. Players who hide the tab during a question are flagged to the host. Rejoining needs the secret seat token issued at join time, and a second device with the same token replaces the first. The answer key of any set that is currently being played is hidden from the editor API until that game ends, and a college can lock the editor entirely with `HOST_PASSCODE`. Known limit of open mode: a student could read a built-in set's answers before a game starts, which is why hosts who care use their own sets or faculty mode.
+**Cheating resistance.** Options are shuffled per player per question on the server, so copying a neighbour's letter does not help. The correct answer is never sent before the reveal; the live counter only says how many answered. The first answer is final; duplicates, stale and late answers are dropped and counted, and so is any answer whose compensated time is faster than a person could have read the question, which the player can then answer again. Every socket is rate-limited, payloads are capped at 10 KB, one connection holds one seat, and a kicked player cannot rejoin under the same name, nor from the same address unless other players in the room share it, as they do on campus Wi-Fi. Host actions need the room's host token. Players who hide the tab during a question are flagged to the host. Rejoining needs the secret seat token issued at join time, and a second device with the same token replaces the first. The answer key of any set that is currently being played is hidden from the editor API until that game ends, and a college can lock the editor entirely with `HOST_PASSCODE`. Known limit of open mode: a student could read a built-in set's answers before a game starts, which is why hosts who care use their own sets or faculty mode.
 
 **Reconnection.** Each player gets a seat token stored on the phone under the room code. On reload the client resumes with it; the server re-attaches the socket to the same player object and replies with the current state: the open question with the remaining time, the reveal, or the final report. Nobody else notices.
 
@@ -87,7 +87,7 @@ The full design, with the life of a round and the reasoning behind each choice, 
 
 ## How to run it
 
-Requirements: Node.js 20 or newer.
+Requirements: Node.js 20.19 or newer.
 
 ```bash
 git clone https://github.com/rohanpandey436/aptiquiz.git
@@ -153,7 +153,7 @@ Deployment: `render.yaml` describes a single free web service (build `npm ci && 
 
 - Runtime: Node.js 24, Express 4, Socket.IO 4.
 - Client: React 18, Vite 5, Tailwind CSS 4, Framer Motion, react-router, qrcode.react, socket.io-client.
-- Testing: the bot simulation in `scripts/loadtest.js` built on socket.io-client.
+- Testing: 38 unit tests on the built-in Node test runner (`npm test`, test/game.test.js and test/ai.test.js) and the bot simulation in `scripts/loadtest.js` built on socket.io-client.
 - Hosting: Render (web service with websockets).
 - AI inside the app: optional question writing through an OpenAI-style chat API, Groq's free tier with GPT-OSS 120B by default (no SDK, one HTTP call in JSON mode). A host or a practice player types a topic; the server asks the model for questions in a fixed JSON shape, checks them like any uploaded set, and saves them as a set marked "Written by AI". It runs only when `AI_API_KEY` is set; without it the option does not appear.
 - How users are told: the builder says the questions were written by AI and asks the host to read the answers before playing; the set carries an AI badge on the Host, Practice and Questions pages; the lobby tells players when a game uses AI-written questions. There are no AI players and no AI answers during a game. Every participant is a real person, and the footer of every page says so.

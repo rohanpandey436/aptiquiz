@@ -78,6 +78,7 @@ export function createRouter(game) {
 
   router.delete("/sets/:id", requireHostKey, (req, res) => {
     const removed = store.deleteSet(cleanId(req.params.id));
+    if (removed === "seed") return res.status(403).json({ error: "Built-in sets cannot be deleted. Duplicate one and edit the copy instead." });
     if (!removed) return res.status(404).json({ error: "Set not found" });
     res.json({ ok: true });
   });

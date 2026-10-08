@@ -1,9 +1,8 @@
-import { cleanText } from "./validate.js";
+import { DIFFICULTIES, TOPICS, cleanText } from "./validate.js";
 
 const BASE_URL = (process.env.AI_BASE_URL || "https://api.groq.com/openai/v1").replace(/\/$/, "");
 const MODEL = process.env.AI_MODEL || "openai/gpt-oss-120b";
-const TOPICS = ["quantitative", "logical", "verbal", "data interpretation"];
-const LEVELS = ["easy", "medium", "hard"];
+const LEVELS = DIFFICULTIES;
 const MIN_USABLE = 3;
 const MAX_IN_FLIGHT = 3;
 const PER_ADDRESS_LIMIT = 12;
@@ -122,7 +121,7 @@ export async function generateQuestions(params, { send = sendChat } = {}) {
   const data = await send({
     model: MODEL,
     temperature: 0.7,
-    max_tokens: 4000,
+    max_tokens: 8000,
     response_format: { type: "json_object" },
     messages: [
       { role: "system", content: system },

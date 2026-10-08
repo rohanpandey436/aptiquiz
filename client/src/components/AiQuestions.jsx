@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Badge, Banner, Button, Segmented, Spinner, inputClass } from "./ui.jsx";
 import { api } from "../lib/api.js";
-import { LETTERS, topicLabel } from "../lib/format.js";
+import { LETTERS, levelLabel, topicLabel } from "../lib/format.js";
 
 const COUNTS = [
   ["5", "5 questions"],
@@ -130,7 +130,7 @@ function Preview({ set, selected }) {
               </p>
               <span className="flex shrink-0 gap-1">
                 <Badge>{topicLabel(q.topic)}</Badge>
-                <Badge>{q.difficulty}</Badge>
+                <Badge>{levelLabel(q.difficulty)}</Badge>
               </span>
             </div>
             <ul className="mt-2 grid gap-1 text-sm sm:grid-cols-2">

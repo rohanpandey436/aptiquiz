@@ -20,7 +20,7 @@ export function Logo({ className = "" }) {
   );
 }
 
-const navClass = ({ isActive }) => `press rounded-full px-3 py-1.5 text-sm font-bold ${isActive ? "bg-brand-50 text-brand-ink" : "text-muted hover:text-ink"}`;
+const navClass = ({ isActive }) => `press rounded-full px-2 py-1.5 text-sm font-bold sm:px-3 ${isActive ? "bg-brand-50 text-brand-ink" : "text-muted hover:text-ink"}`;
 
 function ThemeToggle() {
   const [theme, toggle] = useTheme();
@@ -29,7 +29,7 @@ function ThemeToggle() {
     <button
       type="button"
       onClick={toggle}
-      className="press ml-1 flex h-9 w-9 items-center justify-center rounded-full border border-line bg-card text-ink hover:bg-surface"
+      className="press flex h-9 w-9 items-center justify-center rounded-full border border-line bg-card text-ink hover:bg-surface sm:ml-1"
       aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
       title={dark ? "Light mode" : "Dark mode"}
     >

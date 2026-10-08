@@ -2,9 +2,9 @@ import { forwardRef } from "react";
 
 const buttonStyles = {
   primary:
-    "btn-sweep bg-brand-gradient text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_10px_22px_-10px_rgba(29,78,216,0.7)] hover:-translate-y-0.5 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_14px_26px_-10px_rgba(29,78,216,0.75)] active:translate-y-0 active:scale-[0.985] active:shadow-none disabled:bg-none disabled:bg-brand-200 disabled:shadow-none disabled:hover:translate-y-0",
+    "btn-sweep bg-brand-gradient text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_10px_22px_-10px_rgba(29,78,216,0.7)] hover:-translate-y-0.5 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_14px_26px_-10px_rgba(29,78,216,0.75)] active:translate-y-0 active:scale-[0.985] active:shadow-none disabled:bg-none disabled:bg-brand-200 disabled:text-brand-ink disabled:shadow-none disabled:hover:translate-y-0",
   accent:
-    "btn-sweep bg-accent text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_22px_-10px_rgba(245,158,11,0.8)] hover:-translate-y-0.5 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_14px_26px_-10px_rgba(245,158,11,0.85)] active:translate-y-0 active:scale-[0.985] active:shadow-none disabled:bg-accent-soft disabled:text-muted disabled:shadow-none disabled:hover:translate-y-0",
+    "btn-sweep bg-accent text-on-accent shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_22px_-10px_rgba(245,158,11,0.8)] hover:-translate-y-0.5 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_14px_26px_-10px_rgba(245,158,11,0.85)] active:translate-y-0 active:scale-[0.985] active:shadow-none disabled:bg-accent-soft disabled:text-muted disabled:shadow-none disabled:hover:translate-y-0",
   glass: "btn-sweep btn-glass text-white hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.985]",
   secondary: "btn-sweep bg-card text-ink ring-1 ring-inset ring-line shadow-[0_6px_16px_-10px_rgba(15,23,42,0.35)] hover:-translate-y-0.5 hover:ring-brand-200 active:translate-y-0 active:scale-[0.985] active:bg-surface-2 disabled:text-muted disabled:shadow-none disabled:hover:translate-y-0",
   ghost: "bg-transparent text-brand-ink hover:bg-brand-50 disabled:text-muted",
@@ -44,7 +44,7 @@ const badgeTones = {
   good: "bg-good-bg text-good-ink border-transparent",
   bad: "bg-bad-bg text-bad-ink border-transparent",
   warm: "bg-warm-bg text-warm border-transparent",
-  accent: "bg-accent text-ink border-transparent",
+  accent: "bg-accent text-on-accent border-transparent",
   white: "bg-white/15 text-white border-white/30",
 };
 
@@ -117,13 +117,13 @@ export function Eyebrow({ children, tone = "brand", className = "" }) {
 
 export function Segmented({ options, value, onChange, label }) {
   return (
-    <div className="inline-flex rounded-full bg-surface-2 p-1" role="tablist" aria-label={label}>
+    <div className="inline-flex max-w-full flex-wrap rounded-full bg-surface-2 p-1" role="radiogroup" aria-label={label}>
       {options.map(([key, text]) => (
         <button
           key={key}
           type="button"
-          role="tab"
-          aria-selected={value === key}
+          role="radio"
+          aria-checked={value === key}
           onClick={() => onChange(key)}
           className={`press rounded-full px-4 py-2 text-sm font-semibold ${value === key ? "bg-card text-ink shadow-sm ring-1 ring-inset ring-line" : "text-muted hover:text-ink"}`}
         >

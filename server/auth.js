@@ -56,9 +56,13 @@ export function verifyHostKey(provided, ip) {
 }
 
 export function clientIp(req) {
+  if (req.ip) return req.ip;
   const forwarded = req.headers?.["x-forwarded-for"];
-  if (typeof forwarded === "string" && forwarded.length) return forwarded.split(",")[0].trim();
-  return req.socket?.remoteAddress || req.ip || "unknown";
+  if (typeof forwarded === "string" && forwarded.length) {
+    const hops = forwarded.split(",").map((hop) => hop.trim()).filter(Boolean);
+    if (hops.length) return hops[hops.length - 1];
+  }
+  return req.socket?.remoteAddress || "unknown";
 }
 
 setInterval(() => {

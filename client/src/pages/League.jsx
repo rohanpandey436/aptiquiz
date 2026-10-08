@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Shell } from "../components/Layout.jsx";
 import { Banner, Button, Card, Segmented, Spinner, inputClass } from "../components/ui.jsx";
@@ -10,7 +10,7 @@ const PERIODS = [
   ["all", "All time"],
 ];
 
-const rankChip = (i) => (i === 0 ? "bg-accent text-ink" : i === 1 ? "bg-ink text-canvas" : i === 2 ? "bg-muted text-white" : "bg-surface-2 text-ink");
+const rankChip = (i) => (i === 0 ? "bg-accent text-on-accent" : i === 1 ? "bg-ink text-canvas" : i === 2 ? "bg-muted text-canvas" : "bg-surface-2 text-ink");
 
 function timeAgo(iso) {
   const diff = Date.now() - new Date(iso).getTime();
@@ -29,16 +29,21 @@ export default function League() {
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
 
+  const requestId = useRef(0);
   const load = () => {
+    const id = ++requestId.current;
     setError("");
     setData(null);
     api
       .get(`/league?period=${period}`)
-      .then(setData)
-      .catch((err) => setError(err.message));
+      .then((d) => {
+        if (id === requestId.current) setData(d);
+      })
+      .catch((err) => {
+        if (id === requestId.current) setError(err.message);
+      });
   };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(load, [period]);
 
   useEffect(() => {
@@ -49,8 +54,8 @@ export default function League() {
   }, []);
 
   const q = query.trim().toLowerCase();
-  const colleges = useMemo(() => (data ? data.colleges.filter((c) => !q || c.college.toLowerCase().includes(q)) : []), [data, q]);
-  const players = useMemo(() => (data ? data.players.filter((p) => !q || p.college.toLowerCase().includes(q) || p.name.toLowerCase().includes(q)) : []), [data, q]);
+  const colleges = useMemo(() => (data ? data.colleges.map((c, i) => ({ ...c, rank: i + 1 })).filter((c) => !q || c.college.toLowerCase().includes(q)) : []), [data, q]);
+  const players = useMemo(() => (data ? data.players.map((p, i) => ({ ...p, rank: i + 1 })).filter((p) => !q || p.college.toLowerCase().includes(q) || p.name.toLowerCase().includes(q)) : []), [data, q]);
 
   return (
     <Shell full>
@@ -112,7 +117,7 @@ export default function League() {
                 <ol className="mt-4 flex flex-col gap-2">
                   {colleges.map((c, i) => (
                     <li key={c.college} className={`flex items-center gap-3 rounded-xl border px-3 py-3 ${i === 0 ? "border-accent/40 bg-accent-soft/60 border-l-4 border-l-accent" : "border-line bg-card"}`}>
-                      <span className={`display flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sm font-bold ${rankChip(i)}`}>{i + 1}</span>
+                      <span className={`display flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sm font-bold ${rankChip(c.rank - 1)}`}>{c.rank}</span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate font-bold">{c.college}</span>
                         <span className="block text-xs text-muted">
@@ -138,7 +143,7 @@ export default function League() {
                   <ol className="mt-4 flex flex-col gap-2">
                     {players.slice(0, 15).map((p, i) => (
                       <li key={`${p.college}-${p.name}`} className="flex items-center gap-3 rounded-xl border border-line px-3 py-2">
-                        <span className={`display flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold ${rankChip(i)}`}>{i + 1}</span>
+                        <span className={`display flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold ${rankChip(p.rank - 1)}`}>{p.rank}</span>
                         <span className="min-w-0 flex-1">
                           <span className="block truncate font-bold">{p.name}</span>
                           <span className="block truncate text-xs text-muted">

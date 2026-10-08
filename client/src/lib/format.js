@@ -48,3 +48,5 @@ export function downloadCsv(filename, rows) {
   a.remove();
   URL.revokeObjectURL(url);
 }
+
+export const levelLabel = (level) => (level ? level[0].toUpperCase() + level.slice(1) : "");

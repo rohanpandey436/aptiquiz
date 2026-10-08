@@ -13,7 +13,7 @@ import { request, socket, useSocketEvents } from "../lib/socket.js";
 import { playerSeat } from "../lib/storage.js";
 import { ordinal, seconds, signed, topicLabel } from "../lib/format.js";
 
-const TERMINAL = new Set(["join", "resuming", "kicked", "replaced", "closed"]);
+const TERMINAL = new Set(["ended", "join", "resuming", "kicked", "replaced", "closed"]);
 
 function withAutoNext(reveal) {
   return { ...reveal, autoNextAt: typeof reveal.autoNextMs === "number" ? Date.now() + reveal.autoNextMs : null };
@@ -108,7 +108,6 @@ export default function Play() {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [codeParam]);
 
   useEffect(() => {
@@ -186,7 +185,7 @@ export default function Play() {
   );
 
   const moving = useRef(false);
-  const practising = (phase === "question" && !!question?.practice) || (phase === "reveal" && !!reveal?.practice);
+  const practicing = (phase === "question" && !!question?.practice) || (phase === "reveal" && !!reveal?.practice);
   const canMoveOn = (phase === "reveal" && !!reveal?.practice) || (phase === "question" && !!question?.practice && selected !== null && !!lock && !lock.late);
   const moveOn = useCallback(async () => {
     if (!canMoveOn || moving.current) return;
@@ -318,7 +317,7 @@ export default function Play() {
   }
 
   return (
-    <Shell nav={false} full actions={practising ? <EndPracticeButton onClick={endPractice} /> : null}>
+    <Shell nav={false} full actions={practicing ? <EndPracticeButton onClick={endPractice} /> : null}>
       <div className="mx-auto max-w-5xl px-4 py-5">
         {error ? (
           <Banner tone="bad" className="mb-4">
@@ -470,7 +469,7 @@ function QuestionView({ question, selected, lock, progress, standings, me, onAns
             "Too late, that round had already closed."
           ) : locked ? (
             <span key="locked" className="rise inline-block">
-              Locked in{lock?.elapsedMs ? <span className="ml-1 rounded-full bg-ink px-2 py-0.5 text-xs text-white">{seconds(lock.elapsedMs)}</span> : null}. Waiting for the answer.
+              Locked in{lock?.elapsedMs ? <span className="ml-1 rounded-full bg-ink px-2 py-0.5 text-xs text-canvas">{seconds(lock.elapsedMs)}</span> : null}. Waiting for the answer.
             </span>
           ) : (
             "Tap your answer. Faster correct answers get more points."

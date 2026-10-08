@@ -42,7 +42,7 @@ export function LiveSeconds({ endsAt, render, className = "" }) {
     return () => clearInterval(id);
   }, [endsAt]);
   return (
-    <span className={`tabular ${className}`} aria-live="polite">
+    <span className={`tabular ${className}`}>
       {render(left)}
     </span>
   );

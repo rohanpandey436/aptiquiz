@@ -21,6 +21,5 @@ export function useReveal(deps = []) {
     );
     nodes.forEach((n) => observer.observe(n));
     return () => observer.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 }

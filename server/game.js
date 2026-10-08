@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { performance } from "node:perf_hooks";
 import * as store from "./store.js";
+import { DIFFICULTIES } from "./validate.js";
 
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 export const RTT_CAP_MS = 400;
@@ -13,10 +14,10 @@ export const BONUS_POINTS = 500;
 export const EXAM_PENALTY = 250;
 export const MAX_PLAYERS = 60;
 export const MAX_ROOMS = 300;
-export const DIFFICULTIES = ["easy", "medium", "hard"];
 const ROOM_TTL_MS = 3 * 60 * 60 * 1000;
 const ENDED_TTL_MS = 60 * 60 * 1000;
 const LOBBY_TTL_MS = 20 * 60 * 1000;
+const PRACTICE_TTL_MS = 30 * 60 * 1000;
 
 function token(bytes = 18) {
   return crypto.randomBytes(bytes).toString("base64url");
@@ -140,7 +141,7 @@ export class GameManager {
 
   setsInPlay() {
     const ids = new Set();
-    for (const room of this.rooms.values()) if (room.status !== "ended") ids.add(room.setId);
+    for (const room of this.rooms.values()) if (room.status !== "ended" && !room.practice) ids.add(room.setId);
     return ids;
   }
 
@@ -501,29 +502,24 @@ export class GameManager {
   }
 
   standings(room) {
-    return this.sortPlayers(room).map((p, i) => ({
+    return this.sortPlayers(room).map((p, i) => this.standingRow(p, i + 1));
+  }
+
+  standingRow(p, rank) {
+    return {
       id: p.id,
       name: p.name,
       score: p.score,
-      rank: i + 1,
-      prevRank: p.prevRank || i + 1,
-      delta: p.prevRank ? p.prevRank - (i + 1) : 0,
+      rank,
+      prevRank: p.prevRank || rank,
+      delta: p.prevRank ? p.prevRank - rank : 0,
       lastPoints: p.lastPoints || 0,
       connected: p.connected,
-    }));
+    };
   }
 
   leaderboard(room) {
-    return this.computeRanks(room).map((p) => ({
-      id: p.id,
-      name: p.name,
-      score: p.score,
-      rank: p.rank,
-      prevRank: p.prevRank,
-      delta: p.prevRank - p.rank,
-      lastPoints: p.lastPoints,
-      connected: p.connected,
-    }));
+    return this.computeRanks(room).map((p) => this.standingRow(p, p.rank));
   }
 
   clearRoomTimers(room) {
@@ -915,9 +911,10 @@ export class GameManager {
 
   kickPlayer(room, playerId) {
     const player = room.players.get(playerId);
-    if (!player) return false;
+    if (!player || room.status === "ended") return false;
     room.banned.names.add(player.name.toLowerCase());
-    if (player.address) room.banned.addresses.add(player.address);
+    const sharedAddress = [...room.players.values()].some((p) => p.id !== player.id && p.address === player.address);
+    if (player.address && !sharedAddress) room.banned.addresses.add(player.address);
     if (player.socketId) {
       this.io.to(player.socketId).emit("player:kicked");
       this.bySocket.delete(player.socketId);
@@ -945,7 +942,10 @@ export class GameManager {
     for (const [code, room] of this.rooms) {
       const idle = now - room.lastActivity;
       const expired =
-        (room.status === "ended" && idle > ENDED_TTL_MS) || (room.status === "lobby" && idle > LOBBY_TTL_MS) || idle > ROOM_TTL_MS;
+        (room.status === "ended" && idle > ENDED_TTL_MS) ||
+        (room.status === "lobby" && idle > LOBBY_TTL_MS) ||
+        (room.practice && idle > PRACTICE_TTL_MS) ||
+        idle > ROOM_TTL_MS;
       if (expired) this.closeRoom(code);
     }
   }

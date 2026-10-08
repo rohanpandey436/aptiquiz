@@ -25,7 +25,7 @@ app.use((_req, res, next) => {
   res.set("X-Frame-Options", "SAMEORIGIN");
   next();
 });
-app.use(express.json({ limit: "200kb" }));
+app.use(express.json({ limit: "1mb" }));
 
 const server = http.createServer(app);
 const io = new Server(server, {

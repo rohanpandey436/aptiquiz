@@ -19,7 +19,8 @@ function CrossIcon() {
 export function OptionTile({ index, text, state = "idle", count, total, onClick, disabled, size = "md", delay = 0 }) {
   const letter = LETTERS[index] || String(index + 1);
   const color = OPTION_COLORS[index] || "bg-opt-a";
-  const interactive = typeof onClick === "function" && !disabled;
+  const isButton = typeof onClick === "function";
+  const interactive = isButton && !disabled;
   const pad = size === "lg" ? "p-6 min-h-28 text-2xl" : "p-4 min-h-16 text-lg";
   const chip = size === "lg" ? "h-12 w-12 rounded-2xl text-xl" : "h-10 w-10 rounded-xl text-base";
   const base = "press relative flex w-full items-center gap-3 rounded-tile border-2 text-left font-bold animate-rise";
@@ -33,21 +34,21 @@ export function OptionTile({ index, text, state = "idle", count, total, onClick,
   const chipStyles = {
     idle: "bg-white/20 text-white",
     selected: "bg-white/20 text-white",
-    correct: "bg-white text-good-ink",
-    wrong: "bg-white text-bad-ink",
-    dim: "bg-white text-muted",
+    correct: "bg-card text-good-ink",
+    wrong: "bg-card text-bad-ink",
+    dim: "bg-card text-muted",
   };
   const pct = total ? Math.round((100 * (count || 0)) / total) : 0;
   const showCounts = typeof count === "number";
-  const Tag = interactive ? "button" : "div";
+  const Tag = isButton ? "button" : "div";
 
   return (
     <Tag
-      type={interactive ? "button" : undefined}
-      onClick={interactive ? onClick : undefined}
-      disabled={interactive ? disabled : undefined}
-      aria-pressed={interactive ? state === "selected" : undefined}
-      aria-label={interactive ? `Option ${letter}: ${text}` : undefined}
+      type={isButton ? "button" : undefined}
+      onClick={isButton ? onClick : undefined}
+      disabled={isButton ? disabled : undefined}
+      aria-pressed={isButton ? state === "selected" : undefined}
+      aria-label={isButton ? `Option ${letter}: ${text}` : undefined}
       className={`${base} ${pad} ${styles[state]}`}
       style={{ animationDelay: `${delay}ms` }}
     >
@@ -58,7 +59,7 @@ export function OptionTile({ index, text, state = "idle", count, total, onClick,
       {state === "correct" || state === "selected" ? <CheckIcon /> : null}
       {state === "wrong" ? <CrossIcon /> : null}
       {showCounts ? (
-        <span className={`ml-1 shrink-0 rounded-full px-2 py-0.5 text-sm font-bold tabular ${state === "correct" ? "bg-white/90 text-ink" : "bg-white text-muted"}`} aria-label={`${count} answers`}>
+        <span className={`ml-1 shrink-0 rounded-full px-2 py-0.5 text-sm font-bold tabular ${state === "correct" ? "bg-card text-ink" : "bg-card text-muted"}`} aria-label={`${count} answers`}>
           {count}
         </span>
       ) : null}

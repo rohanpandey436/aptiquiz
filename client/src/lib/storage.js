@@ -44,8 +44,3 @@ export const hostKey = {
   set: (key) => session.set("aq:hostKey", key),
   clear: () => session.remove("aq:hostKey"),
 };
-
-export const soundPref = {
-  get: () => local.get("aq:sound", true),
-  set: (on) => local.set("aq:sound", on),
-};

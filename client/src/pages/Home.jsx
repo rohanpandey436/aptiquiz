@@ -33,7 +33,7 @@ function LeaderboardPreview() {
       <ul className="mt-2 flex flex-col gap-1.5">
         {previewRows.map((r) => (
           <li key={r.name} className={`flex items-center gap-2 rounded-xl px-2 py-1.5 text-sm ${r.rank === 1 ? "bg-accent-soft" : "bg-surface"}`}>
-            <span className={`display flex h-6 w-6 items-center justify-center rounded-md text-xs font-bold ${r.rank === 1 ? "bg-accent text-ink" : "bg-ink text-canvas"}`}>{r.rank}</span>
+            <span className={`display flex h-6 w-6 items-center justify-center rounded-md text-xs font-bold ${r.rank === 1 ? "bg-accent text-on-accent" : "bg-ink text-canvas"}`}>{r.rank}</span>
             <span className="flex-1 font-semibold">{r.name}</span>
             <span className={`text-xs font-extrabold ${r.delta > 0 ? "text-good-ink" : "text-bad-ink"}`}>
               {r.delta > 0 ? "▲" : "▼"}
@@ -71,7 +71,7 @@ export default function Home() {
           <div aria-hidden="true" className="pointer-events-none absolute -left-8 bottom-10 h-24 w-24 -rotate-6 rounded-2xl bg-white/10" />
           <div className="relative grid gap-10 px-5 pb-16 pt-10 md:grid-cols-[1.15fr_1fr] md:px-12 md:pb-20 md:pt-16">
             <div>
-              <span className="inline-flex items-center gap-2 rounded-full bg-accent px-3 py-1 text-[11px] font-extrabold uppercase tracking-[0.14em] text-ink">
+              <span className="inline-flex items-center gap-2 rounded-full bg-accent px-3 py-1 text-[11px] font-extrabold uppercase tracking-[0.14em] text-on-accent">
                 <span className="h-2 w-2 rounded-full bg-ink" aria-hidden="true" />
                 Live aptitude quiz
               </span>
