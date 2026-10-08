@@ -33,7 +33,7 @@ AptiQuiz turns aptitude practice into a live game. A host creates a room from a 
 - Pressure Profile report card: points lost to speed, errors and skipping; accuracy in the last quarter of the timer versus earlier; accuracy right after a mistake.
 - Host insights: per-question correct rates, hardest questions, topic accuracy, tab-switch flags, fairness panel, CSV export.
 - College league across rooms, by week, month or all time.
-- Server as referee, latency compensation, reconnection with the same score, cheating resistance (details below). An external review pass found and we fixed: a seat token being lost on a request timeout, a double "next" closing a fresh question, ghost seats when one connection joined twice, an early-close timer surviving a player's return, tie-breaks that favoured skipping, late-joiner maths, and a spectator payload that carried private reports.
+- Server as referee, latency compensation, reconnection with the same score, cheating resistance (details below). Our own review pass found and fixed: a seat token being lost on a request timeout, a double "next" closing a fresh question, ghost seats when one connection joined twice, an early-close timer surviving a player's return, tie-breaks that favoured skipping, late-joiner maths, and a spectator payload that carried private reports.
 - 50-player simulation script, results below.
 - Projector view at `/watch/CODE`: a read-only second screen that follows the game. It receives standings and question statistics, never players' private reports.
 - Mobile-first layout, keyboard answering (keys 1 to 4), labelled controls, colour plus icon for every status.
@@ -142,7 +142,7 @@ Deployment: `render.yaml` describes a single free web service (build `npm ci && 
 - Client: React 18, Vite 5, Tailwind CSS 4, Framer Motion, react-router, qrcode.react, socket.io-client.
 - Testing: the bot simulation in `scripts/loadtest.js` built on socket.io-client.
 - Hosting: Render (web service with websockets).
-- AI during development: Claude Code was used as a coding assistant for writing and reviewing code and documentation. No AI service runs inside the app.
+- AI during development: an AI coding assistant was used for code suggestions, reviews and documentation drafts. No AI service runs inside the app.
 - Users and AI: there are no AI players, AI chat or AI-generated answers in a game. Every participant is a real person, and the footer of every page says so.
 
 ## Who it is for
