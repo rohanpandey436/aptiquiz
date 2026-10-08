@@ -9,7 +9,6 @@ import { OptionTile } from "../components/OptionTile.jsx";
 import { Leaderboard } from "../components/Leaderboard.jsx";
 import { QuestionBody } from "../components/QuestionBody.jsx";
 import { Confetti } from "../components/Confetti.jsx";
-import { AnswerChart } from "../components/AnswerChart.jsx";
 import { Countdown, LEVEL_CHOICES, TIME_CHOICES, Toggle } from "../components/RoomSettings.jsx";
 import { api } from "../lib/api.js";
 import { request, socket, useSocketEvents } from "../lib/socket.js";
@@ -389,7 +388,6 @@ function RevealView({ reveal, flags, spectator, busy, onNext, onAuto, onEnd }) {
         <Card className="border-l-8 border-l-brand-700">
           <QuestionBody text={reveal.text} size="md" />
         </Card>
-        <AnswerChart options={reveal.options} counts={reveal.counts} correct={reveal.correct} total={reveal.answered} />
         <div className="grid gap-3 md:grid-cols-2">
           {reveal.options.map((opt, i) => (
             <OptionTile key={`r-${reveal.qIndex}-${i}`} index={i} text={opt} state={i === reveal.correct ? "correct" : "dim"} count={reveal.counts[i]} total={reveal.answered} />

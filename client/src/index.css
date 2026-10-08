@@ -98,14 +98,6 @@
       transform: scaleX(1);
     }
   }
-  @keyframes grow-y {
-    from {
-      transform: scaleY(0);
-    }
-    to {
-      transform: scaleY(1);
-    }
-  }
   @keyframes pulse-soft {
     0%,
     100% {
