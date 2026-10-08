@@ -38,7 +38,7 @@ const badgeTones = {
 };
 
 export function Badge({ tone = "neutral", className = "", children }) {
-  return <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${badgeTones[tone]} ${className}`}>{children}</span>;
+  return <span className={`inline-flex items-center whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs font-semibold ${badgeTones[tone]} ${className}`}>{children}</span>;
 }
 
 export function Field({ id, label, hint, children }) {

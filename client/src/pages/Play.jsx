@@ -323,7 +323,7 @@ function RevealView({ reveal, me }) {
   const toneClass = tone === "good" ? "bg-good text-white" : tone === "bad" ? "bg-bad text-white" : "bg-ink text-white";
   return (
     <div className="flex flex-col gap-4">
-      <div className={`rise rounded-2xl p-5 text-center shadow-lg ${toneClass}`}>
+      <div role="status" aria-live="polite" className={`rise rounded-2xl p-5 text-center shadow-lg ${toneClass}`}>
         <p className="text-3xl font-extrabold">{title}</p>
         <p className="mt-1 text-xl font-bold tabular">{you.answered ? `${signed(you.points)} points` : "0 points"}</p>
         {you.answered && you.elapsedMs !== null ? <p className="mt-1 text-sm opacity-90">Answered in {seconds(you.elapsedMs)}</p> : null}
