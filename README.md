@@ -2,7 +2,7 @@
 
 Live multiplayer aptitude practice for placement preparation. Problem Statement 3.
 
-Live URL: _added once deployed_
+Live URL: https://aptiquiz-1zfx.onrender.com
 
 ## What it does
 
@@ -92,6 +92,8 @@ Open http://localhost:3000. For development with hot reload, `npm run dev` runs 
 Environment variables are optional and documented in `.env.example`. `HOST_PASSCODE` protects the question editor and defaults to `faculty`.
 
 Test login: the question editor at `/sets` asks for the host passcode `faculty`. Hosting a game and joining one need no login.
+
+Live instance: https://aptiquiz-1zfx.onrender.com (Render free tier, so the first load after a quiet spell can take up to a minute while the instance wakes).
 
 50-player simulation:
 
