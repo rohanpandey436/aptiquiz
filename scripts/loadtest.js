@@ -57,6 +57,9 @@ async function spawnPlayer(index, code, behaviour) {
   let token = null;
   let questionDone = false;
 
+  socket.on("rtt:probe", (ack) => {
+    if (typeof ack === "function") ack();
+  });
   socket.on("question:start", async (q) => {
     stats.questionsSeen.set(q.qIndex, (stats.questionsSeen.get(q.qIndex) || 0) + 1);
     if (q.answered) return;
@@ -149,7 +152,7 @@ async function main() {
   console.log(`  answer ack latency: p50 ${percentile(stats.ackMs, 50)} ms, p95 ${percentile(stats.ackMs, 95)} ms, max ${percentile(stats.ackMs, 100)} ms`);
   console.log(`  reconnects completed: ${stats.reconnects}`);
   console.log(`  leaderboard entries: ${board.length}, total points: ${sumScores}, sorted correctly: ${scoreOrderOk}`);
-  console.log(`  fairness: avg RTT ${end.insights.fairness.avgRttMs} ms, max RTT ${end.insights.fairness.maxRttMs} ms, cap ${end.insights.fairness.rttCapMs} ms`);
+  console.log(`  fairness: avg RTT ${end.insights.fairness.avgRttMs} ms, max RTT ${end.insights.fairness.maxRttMs} ms, cap ${end.insights.fairness.rttCapMs} ms (measured by the server, subtracted from answer times)`);
   if (missing.length) console.log(`  delivery gaps:\n    ${missing.join("\n    ")}`);
   if (stats.errors.length) console.log(`  errors:\n    ${stats.errors.join("\n    ")}`);
 

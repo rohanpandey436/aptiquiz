@@ -116,7 +116,20 @@ The script creates a room, joins 50 bots, plays a full game, and checks that eve
 | Every bot received every question and reveal | yes |
 | Final leaderboard | 50 entries, sorted correctly |
 
-Run on 8 October 2026 against a local server (`node scripts/loadtest.js --url=http://localhost:3000 --players=50 --fast`). The same command against the live URL is in the deployment notes below once the service is up.
+Run on 8 October 2026 against a local server (`node scripts/loadtest.js --url=http://localhost:3000 --players=50 --fast`).
+
+The same command against the live Render instance, from a laptop in Greater Noida:
+
+| Measure | Result |
+|---|---|
+| Players joined | 50 of 50 |
+| Join latency | p50 517 ms, p95 701 ms |
+| Answer acknowledgement latency | p50 389 ms, p95 555 ms, max 597 ms |
+| Round trip measured by the server | average 270 ms, slowest 287 ms, all subtracted from answer times |
+| Rejected on purpose | 5 duplicate, 5 late |
+| Delivery and leaderboard checks | all passed |
+
+Latency on the free tier is dominated by the distance to the data centre, not by the server, which is why compensation matters: without it a 270 ms round trip would cost every player about 7 points per question.
 
 Deployment: `render.yaml` describes a single free web service (build `npm ci && npm run build`, start `npm start`). Push to `main` and Render redeploys. Free instances sleep after idle time, so the server pings its own health endpoint every 10 minutes while `RENDER_EXTERNAL_URL` (set by Render) or `KEEPALIVE_URL` is present.
 
