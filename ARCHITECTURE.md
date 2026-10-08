@@ -28,7 +28,7 @@ One Node.js process is the referee. It owns the clock, the question order, every
 | Bootstrap | `server/index.js` | Creates the HTTP server, Socket.IO server, security headers, static serving of the built client, SPA fallback. |
 | Game engine | `server/game.js` | `GameManager`: rooms, players, question lifecycle, timing, scoring, auto-advance, ranks, reports. It owns all game state and decides what every screen receives; it emits through the injected Socket.IO server rather than knowing about HTTP or payload parsing. |
 | Transport | `server/sockets.js` | Maps Socket.IO events to engine calls. Validates every payload, rate-limits every socket, measures round-trip time. Roles: host, player, spectator (read-only projector view). |
-| REST | `server/routes.js` | Health, question sets (read, create, edit, duplicate, delete), league, public room lookup. Host passcode guards anything that exposes answers. |
+| REST | `server/routes.js` | Health, question sets (read, create, edit, duplicate, delete), league, public room lookup. A set that is in play is served without its answer key; in faculty mode the passcode guards every call that exposes answers. |
 | Persistence | `server/store.js` | JSON files for question sets and finished games, written atomically. Seeds the built-in sets on first start. |
 | Validation | `server/validate.js` | Sanitizers for names, codes, tokens, integers, question sets, plus a token-bucket rate limiter. |
 | Access | `server/auth.js` | Optional editor passcode (faculty mode) with digest comparison and a per-address limit on wrong attempts. |
