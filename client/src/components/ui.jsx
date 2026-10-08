@@ -81,9 +81,14 @@ export function Banner({ tone = "neutral", children, className = "" }) {
 
 export function Spinner({ label = "Loading" }) {
   return (
-    <div className="flex items-center gap-3 text-muted" role="status">
-      <span className="h-5 w-5 animate-spin rounded-full border-2 border-line border-t-brand-700" aria-hidden="true" />
-      <span className="font-semibold">{label}</span>
+    <div className="flex flex-col items-center gap-4 py-10 text-muted" role="status">
+      <div className="loader" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+        <b />
+      </div>
+      <span className="text-sm font-semibold">{label}</span>
     </div>
   );
 }
