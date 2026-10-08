@@ -455,8 +455,10 @@ function EndView({ end, code, spectator }) {
       ];
 
   const exportCsv = () => {
-    const rows = [["Rank", "Name", "Score", "Correct", "Wrong", "Skipped", "Accuracy %", "Avg speed (s)", "Tab switches"]];
-    for (const p of insights.players || []) rows.push([p.rank, p.name, p.score, p.correct, p.wrong, p.skipped, p.accuracy, p.avgSpeedS ?? "", p.tabSwitches ?? 0]);
+    const rows = [["Rank", "Name", "Score", "Correct", "Wrong", "Skipped", "Accuracy %", "Avg speed (s)", "Best topic", "Weakest topic", "Tab switches"]];
+    for (const p of insights.players || []) {
+      rows.push([p.rank, p.name, p.score, p.correct, p.wrong, p.skipped, p.accuracy, p.avgSpeedS ?? "", p.bestTopic ? topicLabel(p.bestTopic) : "", p.weakestTopic ? topicLabel(p.weakestTopic) : "", p.tabSwitches ?? 0]);
+    }
     rows.push([]);
     rows.push(["Question", "Topic", "Difficulty", "Correct %", "Avg time (s)", "Correct option", "Answers per option"]);
     for (const q of insights.questions) rows.push([q.text, q.topic, q.difficulty, q.pctCorrect, q.avgElapsedMs ? (q.avgElapsedMs / 1000).toFixed(1) : "", q.options[q.correct], q.counts.join(" | ")]);
@@ -542,6 +544,8 @@ function EndView({ end, code, spectator }) {
                       <th className="px-3 py-2">Score</th>
                       <th className="px-3 py-2">Accuracy</th>
                       <th className="px-3 py-2">Avg speed</th>
+                      <th className="px-3 py-2">Best topic</th>
+                      <th className="px-3 py-2">Weakest topic</th>
                       <th className="px-3 py-2">Tab left</th>
                     </tr>
                   </thead>
@@ -553,6 +557,8 @@ function EndView({ end, code, spectator }) {
                         <td className="px-3 py-2 tabular">{p.score}</td>
                         <td className="px-3 py-2 tabular">{p.accuracy}%</td>
                         <td className="px-3 py-2 tabular">{p.avgSpeedS ?? "-"} s</td>
+                        <td className="px-3 py-2">{p.bestTopic ? topicLabel(p.bestTopic) : "-"}</td>
+                        <td className="px-3 py-2">{p.weakestTopic ? topicLabel(p.weakestTopic) : "-"}</td>
                         <td className="px-3 py-2 tabular">{p.tabSwitches || 0}</td>
                       </tr>
                     ))}

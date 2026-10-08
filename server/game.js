@@ -688,6 +688,9 @@ export class GameManager {
     const early = answers.filter((a) => a.answered && a.timeLeftFrac >= 0.25);
     const afterMistake = answers.filter((a, i) => i > 0 && answers[i - 1].answered && !answers[i - 1].correct && a.answered);
     const acc = (arr) => (arr.length ? Math.round((100 * arr.filter((a) => a.correct).length) / arr.length) : null);
+    const ranked = topicRows.filter((t) => t.total > 0).sort((a, b) => b.accuracy - a.accuracy || b.total - a.total);
+    const bestTopic = ranked.length ? ranked[0].topic : null;
+    const weakestTopic = ranked.length > 1 ? ranked[ranked.length - 1].topic : null;
     const answeredList = answers.filter((a) => a.answered);
     const avgSpeedS = answeredList.length ? round1(answeredList.reduce((s, a) => s + a.elapsed, 0) / answeredList.length / 1000) : null;
     const fastestCorrectS = correct.length ? round1(Math.min(...correct.map((a) => a.elapsed)) / 1000) : null;
@@ -705,6 +708,8 @@ export class GameManager {
       avgSpeedS,
       fastestCorrectS,
       topics: topicRows,
+      bestTopic,
+      weakestTopic,
       pressure: {
         maxPossible: n * maxPerQ,
         earned: player.score,
