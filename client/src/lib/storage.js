@@ -39,11 +39,6 @@ export const hostSeat = {
   set: (code, seat) => local.set(`aq:host:${code}`, seat),
 };
 
-export const lastName = {
-  get: () => local.get("aq:lastName", ""),
-  set: (name) => local.set("aq:lastName", name),
-};
-
 export const hostKey = {
   get: () => session.get("aq:hostKey", ""),
   set: (key) => session.set("aq:hostKey", key),

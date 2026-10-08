@@ -4,7 +4,7 @@ import { Shell } from "../components/Layout.jsx";
 import { Badge, Banner, Button, Card, Field, Segmented, Spinner, inputClass } from "../components/ui.jsx";
 import { api } from "../lib/api.js";
 import { request } from "../lib/socket.js";
-import { lastName, playerSeat } from "../lib/storage.js";
+import { playerSeat } from "../lib/storage.js";
 import { topicLabel } from "../lib/format.js";
 
 const LEVELS = [
@@ -28,7 +28,7 @@ export default function Practice() {
   const [setId, setSetId] = useState("");
   const [level, setLevel] = useState("mixed");
   const [pace, setPace] = useState("normal");
-  const [name, setName] = useState(lastName.get());
+  const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -50,7 +50,6 @@ export default function Practice() {
     const res = await request("practice:start", { setId, difficulty: level, questionTime: PACE_SECONDS[pace], name: cleanName });
     setBusy(false);
     if (!res.ok) return setError(res.error || "Could not start practice");
-    lastName.set(cleanName);
     playerSeat.set(res.code, { token: res.token, name: res.name });
     navigate(`/play/${res.code}`);
   };

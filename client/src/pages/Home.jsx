@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Shell } from "../components/Layout.jsx";
 import { Button, Card, Field, inputClass } from "../components/ui.jsx";
-import { lastName } from "../lib/storage.js";
 import { useReveal } from "../lib/useReveal.js";
 
 const steps = [
@@ -51,7 +50,7 @@ function LeaderboardPreview() {
 export default function Home() {
   const navigate = useNavigate();
   const [code, setCode] = useState("");
-  const [name, setName] = useState(lastName.get());
+  const [name, setName] = useState("");
   const [error, setError] = useState("");
   useReveal();
 
@@ -60,7 +59,6 @@ export default function Home() {
     const clean = code.toUpperCase().replace(/[^A-Z0-9]/g, "");
     if (clean.length !== 6) return setError("The room code has 6 letters or digits.");
     if (!name.trim()) return setError("Enter the name your classmates will see.");
-    lastName.set(name.trim());
     navigate(`/play/${clean}`, { state: { name: name.trim(), autoJoin: true } });
   };
 

@@ -10,7 +10,7 @@ import { QuestionBody } from "../components/QuestionBody.jsx";
 import { Confetti } from "../components/Confetti.jsx";
 import { Countdown } from "../components/RoomSettings.jsx";
 import { request, socket, useSocketEvents } from "../lib/socket.js";
-import { lastName, playerSeat } from "../lib/storage.js";
+import { playerSeat } from "../lib/storage.js";
 import { ordinal, seconds, signed, topicLabel } from "../lib/format.js";
 
 const TERMINAL = new Set(["join", "resuming", "kicked", "replaced", "closed"]);
@@ -24,7 +24,7 @@ export default function Play() {
   const location = useLocation();
   const navigate = useNavigate();
   const [code, setCode] = useState((codeParam || "").toUpperCase());
-  const [name, setName] = useState(location.state?.name || lastName.get());
+  const [name, setName] = useState(location.state?.name || "");
   const [phase, setPhase] = useState("join");
   const [me, setMe] = useState(null);
   const [lobby, setLobby] = useState(null);
@@ -66,7 +66,6 @@ export default function Play() {
       setBusy(false);
       if (!res.ok) return setError(res.error || "Could not join");
       playerSeat.set(joinCode, { token: res.token, name: res.name });
-      lastName.set(joinName);
       setMe({ id: res.playerId, name: res.name });
       applyState(res.state);
       if (codeParam !== joinCode) navigate(`/play/${joinCode}`, { replace: true });
