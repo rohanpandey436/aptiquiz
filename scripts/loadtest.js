@@ -180,7 +180,12 @@ async function joinExistingRoom() {
   const behaviours = (i) => (i === 1 ? "duplicate" : i === 2 ? "late" : i === 3 ? "reconnect" : "normal");
   const players = (await Promise.all(Array.from({ length: PLAYERS }, (_, i) => spawnPlayer(i, JOIN_CODE, behaviours(i))))).filter(Boolean);
   if (!players.length) {
-    const reason = (stats.errors[0] || "").replace(/^[^:]*: join failed /, "");
+    let reason = "";
+    try {
+      reason = JSON.parse((stats.errors[0] || "").replace(/^[^:]*: join failed /, "")).error || "";
+    } catch {
+      reason = "";
+    }
     console.log(`Nobody could join room ${JOIN_CODE}. ${reason ? `Server said: ${reason}. ` : ""}Host a room on the big screen first, then pass its 6-letter code with --join=CODE.`);
     process.exit(1);
   }
