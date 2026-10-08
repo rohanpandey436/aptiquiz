@@ -93,7 +93,7 @@ export default function Home() {
                   </Button>
                 </Link>
                 <Link to="/league">
-                  <Button size="lg" variant="white">
+                  <Button size="lg" variant="glass">
                     College league
                   </Button>
                 </Link>

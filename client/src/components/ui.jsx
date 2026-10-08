@@ -1,12 +1,13 @@
 const buttonStyles = {
   primary:
-    "bg-brand-700 text-white shadow-[0_10px_22px_-10px_rgba(29,78,216,0.65)] hover:-translate-y-0.5 hover:bg-brand-800 hover:shadow-[0_14px_26px_-10px_rgba(29,78,216,0.7)] active:translate-y-0 active:shadow-none disabled:bg-brand-200 disabled:shadow-none disabled:hover:translate-y-0",
+    "btn-sweep bg-brand-gradient text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_10px_22px_-10px_rgba(29,78,216,0.7)] hover:-translate-y-0.5 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_14px_26px_-10px_rgba(29,78,216,0.75)] active:translate-y-0 active:scale-[0.985] active:shadow-none disabled:bg-none disabled:bg-brand-200 disabled:shadow-none disabled:hover:translate-y-0",
   accent:
-    "bg-accent text-ink shadow-[0_10px_22px_-10px_rgba(245,158,11,0.75)] hover:-translate-y-0.5 hover:brightness-105 hover:shadow-[0_14px_26px_-10px_rgba(245,158,11,0.8)] active:translate-y-0 active:shadow-none disabled:bg-accent-soft disabled:text-muted disabled:shadow-none disabled:hover:translate-y-0",
-  secondary: "bg-white text-ink ring-1 ring-inset ring-line shadow-sm hover:bg-surface hover:ring-brand-200 active:bg-surface-2 disabled:text-muted disabled:shadow-none",
+    "btn-sweep bg-accent text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_22px_-10px_rgba(245,158,11,0.8)] hover:-translate-y-0.5 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_14px_26px_-10px_rgba(245,158,11,0.85)] active:translate-y-0 active:scale-[0.985] active:shadow-none disabled:bg-accent-soft disabled:text-muted disabled:shadow-none disabled:hover:translate-y-0",
+  glass: "btn-sweep btn-glass text-white hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.985]",
+  secondary: "btn-sweep bg-white text-ink ring-1 ring-inset ring-line shadow-[0_6px_16px_-10px_rgba(15,23,42,0.35)] hover:-translate-y-0.5 hover:ring-brand-200 active:translate-y-0 active:scale-[0.985] active:bg-surface-2 disabled:text-muted disabled:shadow-none disabled:hover:translate-y-0",
   ghost: "bg-transparent text-brand-700 hover:bg-brand-50 disabled:text-muted",
   danger: "bg-white text-bad ring-1 ring-inset ring-bad/30 hover:bg-bad-bg disabled:text-muted",
-  white: "bg-white text-brand-800 shadow-[0_10px_22px_-10px_rgba(15,23,42,0.45)] hover:-translate-y-0.5 hover:bg-brand-50 active:translate-y-0 active:shadow-none",
+  white: "btn-sweep bg-white text-brand-800 shadow-[0_10px_22px_-10px_rgba(15,23,42,0.5)] hover:-translate-y-0.5 hover:bg-brand-50 active:translate-y-0 active:scale-[0.985] active:shadow-none",
 };
 
 const buttonSizes = {
@@ -15,13 +16,15 @@ const buttonSizes = {
   lg: "px-7 py-3.5 text-base",
 };
 
-export function Button({ variant = "primary", size = "md", className = "", type = "button", ...props }) {
+export function Button({ variant = "primary", size = "md", className = "", type = "button", children, ...props }) {
   return (
     <button
       type={type}
-      className={`press inline-flex items-center justify-center gap-2 rounded-full font-semibold tracking-[0.01em] disabled:cursor-not-allowed ${buttonStyles[variant]} ${buttonSizes[size]} ${className}`}
+      className={`press inline-flex items-center justify-center rounded-full font-semibold tracking-[0.01em] disabled:cursor-not-allowed ${buttonStyles[variant]} ${buttonSizes[size]} ${className}`}
       {...props}
-    />
+    >
+      <span className="inline-flex items-center gap-2">{children}</span>
+    </button>
   );
 }
 

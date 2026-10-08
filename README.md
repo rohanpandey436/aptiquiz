@@ -10,9 +10,13 @@ AptiQuiz turns aptitude practice into a live game. A host creates a room from a 
 
 ## Screenshots
 
-| Host lobby | Host during a question |
+| Home | Host lobby on the big screen |
 |---|---|
-| ![Host lobby with room code and QR](docs/screenshots/host-lobby.jpg) | ![Host question view](docs/screenshots/host-question.jpg) |
+| ![Home page](docs/screenshots/home.jpg) | ![Host lobby with room code and QR](docs/screenshots/host-lobby.jpg) |
+
+| Projector view during a reveal | League on a phone |
+|---|---|
+| ![Projector view during a reveal](docs/screenshots/host-question.jpg) | ![League page on a phone](docs/screenshots/league.jpg) |
 
 | Player question | Player reveal | Player report card |
 |---|---|---|
