@@ -303,6 +303,19 @@ test("a practice room is never persisted to the league", () => {
   assert.equal(store.recentGames(100).length, before);
 });
 
+test("the league names a best player even when every score is zero", () => {
+  const { game, room } = setup();
+  room.practice = false;
+  room.college = "Zero College";
+  game.startGame(room);
+  game.closeQuestion(room);
+  game.endGame(room);
+  const row = store.league(0).colleges.find((c) => c.college === "Zero College");
+  assert.ok(row);
+  assert.ok(row.bestPlayer.length > 0);
+  assert.equal(row.bestScore, 0);
+});
+
 test("answer keys are hidden for sets that are being played", () => {
   const { game, room } = setup();
   assert.ok(game.setsInPlay().has("seed_lightning"));

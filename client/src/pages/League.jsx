@@ -69,7 +69,7 @@ export default function League() {
                   Host a game for your college
                 </Button>
               </Link>
-              <p className="text-sm text-onblue">{data ? `${data.games} games counted in this period` : "Loading"}</p>
+              <p className="text-sm text-onblue">{data ? `${data.games} ${data.games === 1 ? "game" : "games"} counted in this period` : "Loading"}</p>
             </div>
           </div>
         </div>

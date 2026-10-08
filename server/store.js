@@ -139,7 +139,7 @@ export function league(periodDays) {
     for (const p of g.players) {
       c.players += 1;
       c.totalPoints += p.score;
-      if (p.score > c.bestScore) {
+      if (!c.bestPlayer || p.score > c.bestScore) {
         c.bestScore = p.score;
         c.bestPlayer = p.name;
       }
