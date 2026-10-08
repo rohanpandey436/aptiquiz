@@ -34,7 +34,20 @@ export class GameManager {
     this.io = io;
     this.rooms = new Map();
     this.bySocket = new Map();
-    setInterval(() => this.sweep(), 60 * 1000).unref();
+    this.sweepTimer = setInterval(() => this.sweep(), 60 * 1000);
+    this.sweepTimer.unref();
+  }
+
+  shutdown() {
+    clearInterval(this.sweepTimer);
+    for (const room of this.rooms.values()) {
+      if (room.q) {
+        clearTimeout(room.q.closeTimer);
+        clearTimeout(room.q.earlyTimer);
+      }
+    }
+    this.rooms.clear();
+    this.bySocket.clear();
   }
 
   now() {
@@ -508,7 +521,7 @@ export class GameManager {
   }
 
   playerReport(room, player) {
-    const n = room.questions.length;
+    const n = room.rounds.length;
     const answers = player.answers;
     const correct = answers.filter((a) => a.correct);
     const wrong = answers.filter((a) => a.answered && !a.correct);

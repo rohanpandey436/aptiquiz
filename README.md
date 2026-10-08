@@ -8,6 +8,16 @@ Live URL: _added once deployed_
 
 AptiQuiz turns aptitude practice into a live game. A host creates a room from a question set and shares a 6-letter code; up to 50 students join from their phones, see each question at the same moment, answer against the clock, and watch a leaderboard move after every round. At the end, every player gets a report card that explains exactly where their points went: speed, wrong answers or pressure, topic by topic. Scores from every room feed a college league.
 
+## Screenshots
+
+| Host lobby | Host during a question |
+|---|---|
+| ![Host lobby with room code and QR](docs/screenshots/host-lobby.jpg) | ![Host question view](docs/screenshots/host-question.jpg) |
+
+| Player question | Player reveal | Player report card |
+|---|---|---|
+| ![Player question on a phone](docs/screenshots/player-question.jpg) | ![Player reveal on a phone](docs/screenshots/player-reveal.jpg) | ![Player report card on a phone](docs/screenshots/player-report.jpg) |
+
 ## Done / Left / Plan
 
 **Done**
@@ -87,6 +97,8 @@ Test login: the question editor at `/sets` asks for the host passcode `faculty`.
 ```bash
 npm run loadtest -- --url=http://localhost:3000 --players=50 --fast
 ```
+
+Unit tests for the engine (`npm test`) cover shuffling, scoring, exam mode, rejection of duplicate, stale, invalid and late answers, compensation capping, early close, tie-breaks, reconnection and the report maths.
 
 The script creates a room, joins 50 bots, plays a full game, and checks that every bot received every question and reveal, that duplicate and late answers were rejected, that a bot which drops and resumes keeps its seat, and that the final leaderboard is complete and sorted. Latest local run:
 

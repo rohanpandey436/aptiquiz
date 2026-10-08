@@ -64,3 +64,12 @@ if (keepAliveUrl) {
 server.listen(PORT, () => {
   console.log(`AptiQuiz listening on http://localhost:${PORT}`);
 });
+
+for (const signal of ["SIGTERM", "SIGINT"]) {
+  process.on(signal, () => {
+    game.shutdown();
+    io.close();
+    server.close(() => process.exit(0));
+    setTimeout(() => process.exit(0), 3000).unref();
+  });
+}

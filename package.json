@@ -4,12 +4,15 @@
   "private": true,
   "description": "Live multiplayer aptitude arena for placement preparation",
   "type": "module",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "concurrently -n server,client -c blue,green \"node --watch server/index.js\" \"vite --config client/vite.config.js\"",
     "build": "vite build --config client/vite.config.js",
     "start": "node server/index.js",
-    "loadtest": "node scripts/loadtest.js"
+    "loadtest": "node scripts/loadtest.js",
+    "test": "node --test test/*.test.js"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.0",
