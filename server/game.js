@@ -433,12 +433,12 @@ export class GameManager {
     }
     const question = room.questions[qIndex];
     const raw = this.now() - room.q.startedAt;
-    if (raw < MIN_REACTION_MS) {
+    const comp = Math.min(player.rtt || 0, RTT_CAP_MS);
+    const elapsed = Math.max(0, raw - comp);
+    if (elapsed < MIN_REACTION_MS) {
       room.stats.rejectedEarly++;
       return { accepted: false, reason: "early" };
     }
-    const comp = Math.min(player.rtt || 0, RTT_CAP_MS);
-    const elapsed = Math.max(0, raw - comp);
     if (elapsed > room.q.durationMs) {
       room.stats.rejectedLate++;
       return { accepted: false, reason: "late" };

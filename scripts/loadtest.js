@@ -74,7 +74,7 @@ async function spawnPlayer(index, code, behaviour) {
     if (q.answered) return;
     seen.questions++;
     questionDone = false;
-    const thinkMs = FAST ? rand(50, 400) : rand(300, Math.max(400, q.durationMs - 600));
+    const thinkMs = FAST ? rand(300, 500) : rand(300, Math.max(400, q.durationMs - 600));
     const answerDelay = behaviour === "late" ? q.durationMs + 150 : thinkMs;
     await sleep(answerDelay);
     if (questionDone && behaviour !== "late") return;

@@ -137,15 +137,19 @@ test("second answers, stale questions and invalid positions are rejected", () =>
   assert.equal(room.stats.rejectedInvalid, 2);
 });
 
-test("an answer that arrives faster than a human could read is rejected and can be retried", () => {
-  const { game, room, a } = setup({ questionTime: 10 });
+test("an answer whose compensated time is faster than reading is rejected and can be retried", () => {
+  const { game, room, a, b } = setup({ questionTime: 10 });
   game.startGame(room);
   const started = room.q.startedAt;
   game.now = () => started + 40;
   assert.equal(game.submitAnswer(room, a, 0, 0).reason, "early");
-  assert.equal(room.stats.rejectedEarly, 1);
+  b.rtt = 300;
+  game.now = () => started + 320;
+  assert.equal(game.submitAnswer(room, b, 0, 0).reason, "early", "a reply sent the instant the question arrived is early after compensation");
+  assert.equal(room.stats.rejectedEarly, 2);
   game.now = () => started + 900;
   assert.equal(game.submitAnswer(room, a, 0, 0).accepted, true);
+  assert.equal(game.submitAnswer(room, b, 0, 0).accepted, true);
 });
 
 test("late answers are judged on the compensated clock", () => {
