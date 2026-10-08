@@ -4,7 +4,7 @@ const KEY = "aq:theme";
 
 export function readTheme() {
   try {
-    const stored = localStorage.getItem(KEY);
+    const stored = sessionStorage.getItem(KEY);
     if (stored === "dark" || stored === "light") return stored;
   } catch {
     return "light";
@@ -23,7 +23,7 @@ export function useTheme() {
   useEffect(() => {
     applyTheme(theme);
     try {
-      localStorage.setItem(KEY, theme);
+      sessionStorage.setItem(KEY, theme);
     } catch {
       return;
     }
