@@ -14,7 +14,8 @@ Aptitude tests are the first filter in placements. Students fail them on speed a
 4. Each phone shows the options in its own shuffled order. A tap sends only the position; the server maps it back.
 5. The server stamps the arrival time, subtracts the player's measured network delay, and locks the first answer.
 6. When the time ends, or everyone has answered, the server reveals the answer, scores the round and pushes the leaderboard with up and down arrows.
-7. After the last question: podium, report cards, league update.
+7. Eight seconds later the server starts the next question by itself (auto-advance). The host can press Next to skip the wait or pause it.
+8. After the last question: podium, report cards, league update.
 
 ## Scoring
 
@@ -33,11 +34,19 @@ A question takes one trip to reach the phone and the tap takes one trip back, so
 - Host actions need the host token.
 - Tab switching during a question is flagged to the host.
 - Rejoining needs the secret seat token; a second device replaces the first.
-- Question sets with answers are behind the host passcode.
+- The answer key of any set that is being played is hidden from the editor until the game ends. A college can lock the editor with a passcode (faculty mode); hosting never needs one.
 
 ## "What if my phone refreshes?"
 
 The seat token on the phone brings you back to the same player: same score, current question with the remaining time. Nobody else is disturbed.
+
+## "How do I write my own questions?"
+
+On the Host page, switch to "Write your own" and type questions plainly: the question, then options as "A) 30", then "Answer: B" (or a * before the right option). It parses as you type, and "Create room" saves the set and opens the room. The full editor at /sets handles images, tables, reordering and reuse.
+
+## "How does the league work?"
+
+Nothing to join. The host names the college when creating the room, and every finished game adds its players' points to that college. The League page shows colleges, players and recent games, by week, month or all time.
 
 ## "Does it really handle 50 players?"
 

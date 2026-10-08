@@ -19,7 +19,7 @@ Goal: the judge plays one round on their own phone and sees the leaderboard move
 
 **1:15 Reveal.** Point at the counts, the explanation, and the leaderboard arrows. "Scores release only when the round closes, so a fast tap never leaks who was right."
 
-**1:30 Question 2 and 3.** Press Next. Let them play. If asked about slow Wi-Fi: "The server measures each phone's round-trip delay and subtracts it, capped at 400 milliseconds, so a slow connection is not a handicap. The host's fairness panel shows the numbers after the game."
+**1:30 Question 2 and 3.** The next question starts by itself after the countdown; press Next if you want to move faster. Let them play. If asked about slow Wi-Fi: "The server measures each phone's round-trip delay and subtracts it, capped at 400 milliseconds, so a slow connection is not a handicap. The host's fairness panel shows the numbers after the game."
 
 **2:15 Refresh test.** Ask the judge to refresh their phone mid-question. They come back on the same question with the same score. "Seat tokens. Nobody else notices."
 
