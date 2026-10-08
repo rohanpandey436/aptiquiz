@@ -182,7 +182,7 @@ async function joinExistingRoom() {
   if (!players.length) {
     let reason = "";
     try {
-      reason = JSON.parse((stats.errors[0] || "").replace(/^[^:]*: join failed /, "")).error || "";
+      reason = (JSON.parse((stats.errors[0] || "").replace(/^[^:]*: join failed /, "")).error || "").replace(/\.$/, "");
     } catch {
       reason = "";
     }
