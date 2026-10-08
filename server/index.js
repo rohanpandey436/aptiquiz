@@ -1,4 +1,5 @@
 import http from "node:http";
+import { aiEnabled } from "./ai.js";
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -72,6 +73,7 @@ if (keepAliveUrl) {
 
 server.listen(PORT, () => {
   console.log(`AptiQuiz listening on http://localhost:${PORT}`);
+  console.log(aiEnabled() ? "AI question writing is on." : "AI question writing is off. Set AI_API_KEY to turn it on.");
 });
 
 for (const signal of ["SIGTERM", "SIGINT"]) {

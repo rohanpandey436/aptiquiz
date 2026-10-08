@@ -1,6 +1,7 @@
 import { Router } from "express";
 import * as store from "./store.js";
-import { cleanCode, cleanId, cleanInt } from "./validate.js";
+import { DIFFICULTIES, cleanCode, cleanId, cleanInt, cleanText } from "./validate.js";
+import { aiEnabled, describeAiError, generateQuestions, reserveSlot } from "./ai.js";
 import { verifyHostKey, isBlocked, clientIp, editorLocked } from "./auth.js";
 
 function requireHostKey(req, res, next) {
@@ -19,7 +20,7 @@ export function createRouter(game) {
   });
 
   router.get("/config", (_req, res) => {
-    res.json({ editorLocked: editorLocked() });
+    res.json({ editorLocked: editorLocked(), ai: aiEnabled() });
   });
 
   router.post("/host/verify", (req, res) => {
@@ -44,6 +45,27 @@ export function createRouter(game) {
     const result = store.saveSet(req.body || {});
     if (!result.ok) return res.status(400).json({ errors: result.errors });
     res.json(result.set);
+  });
+
+  router.post("/sets/ai", requireHostKey, async (req, res) => {
+    if (!aiEnabled()) return res.status(503).json({ error: "AI questions are not set up on this server." });
+    const topic = cleanText(req.body?.topic, 80);
+    if (topic.length < 2) return res.status(400).json({ error: "Type a topic first." });
+    const count = cleanInt(req.body?.count, 3, 20, 10);
+    const difficulty = ["mixed", ...DIFFICULTIES].includes(req.body?.difficulty) ? req.body.difficulty : "mixed";
+    const slot = reserveSlot(clientIp(req));
+    if (!slot.ok) return res.status(429).json({ error: slot.error });
+    try {
+      const drafted = await generateQuestions({ topic, count, difficulty });
+      const saved = store.saveSet(drafted, { ai: true });
+      if (!saved.ok) return res.status(502).json({ error: "The AI questions did not pass the set checks. Try again." });
+      res.json({ set: saved.set, summary: store.summarize(saved.set) });
+    } catch (err) {
+      console.error("AI question writing failed:", err?.message || err);
+      res.status(502).json({ error: describeAiError(err) });
+    } finally {
+      slot.release();
+    }
   });
 
   router.post("/sets/:id/duplicate", requireHostKey, (req, res) => {

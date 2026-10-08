@@ -8,15 +8,18 @@ import { request } from "../lib/socket.js";
 import { hostSeat } from "../lib/storage.js";
 import { topicLabel } from "../lib/format.js";
 import { QUICK_EXAMPLE, parseQuickQuestions } from "../lib/quickParse.js";
+import { AiQuestions } from "../components/AiQuestions.jsx";
 
 const SOURCES = [
   ["builtin", "Built-in sets"],
   ["own", "Write your own"],
 ];
+const AI_SOURCE = ["ai", "Ask AI"];
 
 export default function HostCreate() {
   const navigate = useNavigate();
   const [source, setSource] = useState("builtin");
+  const [aiOn, setAiOn] = useState(false);
   const [sets, setSets] = useState(null);
   const [setId, setSetId] = useState("");
   const [ownTitle, setOwnTitle] = useState("");
@@ -51,6 +54,18 @@ export default function HostCreate() {
   };
 
   useEffect(loadSets, []);
+  useEffect(() => {
+    api
+      .get("/config")
+      .then((c) => setAiOn(!!c.ai))
+      .catch(() => {});
+  }, []);
+
+  const useAiSet = ({ set, summary }) => {
+    setSets((list) => [summary, ...(list || []).filter((s) => s.id !== summary.id)]);
+    setSource("builtin");
+    chooseSet(set.id);
+  };
 
   const parsed = useMemo(() => parseQuickQuestions(ownText), [ownText]);
   const ownReady = source === "own" && parsed.count > 0 && parsed.errors.length === 0;
@@ -89,7 +104,7 @@ export default function HostCreate() {
           <Card>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="display text-xl font-bold">Questions</h2>
-              <Segmented options={SOURCES} value={source} onChange={setSource} label="Question source" />
+              <Segmented options={aiOn ? [...SOURCES, AI_SOURCE] : SOURCES} value={source} onChange={setSource} label="Question source" />
             </div>
 
             {source === "builtin" ? (
@@ -121,7 +136,10 @@ export default function HostCreate() {
                       >
                         <div className="flex items-start justify-between gap-2">
                           <span className="display text-lg font-bold leading-tight">{s.title}</span>
-                          <Badge tone={active ? "brand" : "neutral"}>{s.count} Qs</Badge>
+                          <span className="flex shrink-0 gap-1">
+                            {s.ai ? <Badge tone="warm">AI</Badge> : null}
+                            <Badge tone={active ? "brand" : "neutral"}>{s.count} Qs</Badge>
+                          </span>
                         </div>
                         <p className="mt-1 text-sm text-muted">{s.description}</p>
                         <p className="mt-2 text-xs text-muted">
@@ -134,6 +152,8 @@ export default function HostCreate() {
                   })}
                 </div>
               )
+            ) : source === "ai" ? (
+              <AiQuestions onUse={useAiSet} />
             ) : (
               <div className="mt-4 flex flex-col gap-4">
                 <Field id="own-title" label="Set name">

@@ -358,6 +358,7 @@ function LobbyView({ lobby, me }) {
         </div>
         <p className="mt-3 text-sm text-muted">
           {lobby.setTitle}. {lobby.settings.questionTime} seconds per question.
+          {lobby.setAi ? " The questions were written by AI and checked by the host." : ""}
         </p>
         <p className="mt-1 text-sm text-muted">{lobby.scoring.text}</p>
         {lobby.settings.examMode ? (

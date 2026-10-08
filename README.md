@@ -27,6 +27,8 @@ AptiQuiz turns aptitude practice into a live game. A host creates a room from a 
 **Done**
 - Question authoring two ways: a plain-text quick creator on the Host page (type questions as you would on paper, "A) 30", "Answer: B") that saves the set and opens the room in one step, and a full editor with topic, difficulty, explanation, image, table, reorder, duplicate, delete, plain-text and JSON import. Nine built-in sets built from a bank of 60 questions we wrote for this project, each tagged easy, medium or hard, with a worked explanation: a demo round, a balanced mix, easy, medium and hard rounds, and one pack per topic.
 - Rooms with short join codes and a QR code, a live lobby, host start. The host picks a level (mixed, easy, medium or hard) and can change the set, level, pace, exam mode and auto-advance in the lobby before starting.
+- Ask AI for questions: on the Host and Practice pages a host types a topic such as "Percentages" or "Blood relations", picks how many questions and the level, and gets a ready set with answers and explanations to read through before using it. The set is saved like any other and marked "Written by AI" everywhere it appears. Needs an API key on the server; without one the option is hidden.
+- Host control room: while a game runs the host sees the question and its options in a compact form, the live count of answers, who is away, the time left, and the full standings with movement arrows at all times, with one large End round button. The projector view keeps the big, player-style layout.
 - Practice mode: play any set alone at a relaxed, normal or fast pace, with the same report card at the end. Each answer moves on by itself after 8 seconds or the moment you press Enter, and the practice can be ended from the top bar at any time. Practice games are never counted in the league.
 - Light theme by default, with a dark theme one tap away in the header that lasts for the browser session. Every colour comes from one token sheet, so both themes keep the same contrast rules.
 - Error handling throughout: an offline screen and a long-reconnect screen with a drawn mascot, a crash page that keeps the game safe, plain-language messages when the server is unreachable or waking up, Try again on every page that loads data, and a fallback when a question image does not load.
@@ -81,6 +83,7 @@ The full design, with the life of a round and the reasoning behind each choice, 
 - **Tab-switch flags.** The host sees who left the page during a question.
 - **Projector view.** `/watch/CODE` mirrors the host screen without controls, for a second display at college events.
 - **Practice mode and levels.** Solo practice with the same report card, and easy, medium and hard filters on any set, so a student can warm up alone before competing.
+- **AI question sets.** A topic typed in plain words becomes a checked, saved question set in about half a minute, so a faculty member can run a round on exactly what was taught that week without writing questions by hand.
 
 ## How to run it
 
@@ -96,7 +99,7 @@ npm start
 
 Open http://localhost:3000. For development with hot reload, `npm run dev` runs the server on 3000 and Vite on 5173.
 
-Environment variables are optional and documented in `.env.example`. `HOST_PASSCODE` is optional; when set it locks the question editor and every API call that reveals answers, with a per-address limit on wrong attempts.
+Environment variables are optional and documented in `.env.example`. `HOST_PASSCODE` is optional; when set it locks the question editor and every API call that reveals answers, with a per-address limit on wrong attempts. `AI_API_KEY` is optional; when set, the Host and Practice pages gain an "Ask AI" option that writes a question set on a typed topic. The server talks to any OpenAI-style chat API; the defaults (`AI_BASE_URL`, `AI_MODEL`) point at Groq's free tier with Llama 3.3 70B, and Gemini's free tier works by changing those two values.
 
 Test login: none needed. Hosting, joining and the question editor are open on the demo deployment. A college can set `HOST_PASSCODE` to lock the editor ("faculty mode"); hosting a game never needs a passcode. While a set is being played, its answer key is hidden from the editor API even in open mode, so a player cannot read the answers mid-game.
 
@@ -152,8 +155,9 @@ Deployment: `render.yaml` describes a single free web service (build `npm ci && 
 - Client: React 18, Vite 5, Tailwind CSS 4, Framer Motion, react-router, qrcode.react, socket.io-client.
 - Testing: the bot simulation in `scripts/loadtest.js` built on socket.io-client.
 - Hosting: Render (web service with websockets).
-- AI during development: an AI coding assistant was used for code suggestions, reviews and documentation drafts. No AI service runs inside the app.
-- Users and AI: there are no AI players, AI chat or AI-generated answers in a game. Every participant is a real person, and the footer of every page says so.
+- AI inside the app: optional question writing through an OpenAI-style chat API, Groq's free tier with Llama 3.3 70B by default (no SDK, one HTTP call in JSON mode). A host or a practice player types a topic; the server asks the model for questions in a fixed JSON shape, checks them like any uploaded set, and saves them as a set marked "Written by AI". It runs only when `AI_API_KEY` is set; without it the option does not appear.
+- How users are told: the builder says the questions were written by AI and asks the host to read the answers before playing; the set carries an AI badge on the Host, Practice and Questions pages; the lobby tells players when a game uses AI-written questions. There are no AI players and no AI answers during a game. Every participant is a real person, and the footer of every page says so.
+- AI during development: an AI coding assistant was used for code suggestions, reviews and documentation drafts.
 
 ## Who it is for
 

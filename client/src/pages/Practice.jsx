@@ -6,6 +6,7 @@ import { api } from "../lib/api.js";
 import { request } from "../lib/socket.js";
 import { playerSeat } from "../lib/storage.js";
 import { topicLabel } from "../lib/format.js";
+import { AiQuestions } from "../components/AiQuestions.jsx";
 
 const LEVELS = [
   ["mixed", "Mixed"],
@@ -22,6 +23,11 @@ const PACES = [
 
 const PACE_SECONDS = { relaxed: 40, normal: 20, fast: 10 };
 
+const SOURCES = [
+  ["builtin", "Pick a set"],
+  ["ai", "Ask AI"],
+];
+
 const FLOWS = [
   ["auto", "By itself after 8 s"],
   ["manual", "When I press Enter"],
@@ -30,6 +36,8 @@ const FLOWS = [
 export default function Practice() {
   const navigate = useNavigate();
   const [sets, setSets] = useState(null);
+  const [source, setSource] = useState("builtin");
+  const [aiOn, setAiOn] = useState(false);
   const [setId, setSetId] = useState("");
   const [level, setLevel] = useState("mixed");
   const [pace, setPace] = useState("normal");
@@ -60,6 +68,18 @@ export default function Practice() {
   };
 
   useEffect(loadSets, []);
+  useEffect(() => {
+    api
+      .get("/config")
+      .then((c) => setAiOn(!!c.ai))
+      .catch(() => {});
+  }, []);
+
+  const useAiSet = ({ set, summary }) => {
+    setSets((list) => [summary, ...(list || []).filter((s) => s.id !== summary.id)]);
+    setSource("builtin");
+    chooseSet(set.id);
+  };
 
   const start = async (e) => {
     e.preventDefault();
@@ -82,8 +102,13 @@ export default function Practice() {
 
         <form onSubmit={start} className="mt-8 flex flex-col gap-6">
           <Card>
-            <h2 className="display text-xl font-bold">Question set</h2>
-            {!sets ? (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="display text-xl font-bold">Question set</h2>
+              {aiOn ? <Segmented options={SOURCES} value={source} onChange={setSource} label="Question source" /> : null}
+            </div>
+            {source === "ai" ? (
+              <AiQuestions onUse={useAiSet} />
+            ) : !sets ? (
               <Spinner label="Loading sets" />
             ) : sets.length === 0 ? (
               <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -107,7 +132,10 @@ export default function Practice() {
                     >
                       <div className="flex items-start justify-between gap-2">
                         <span className="display text-lg font-bold leading-tight">{s.title}</span>
-                        <Badge tone={active ? "brand" : "neutral"}>{s.count} Qs</Badge>
+                        <span className="flex shrink-0 gap-1">
+                          {s.ai ? <Badge tone="warm">AI</Badge> : null}
+                          <Badge tone={active ? "brand" : "neutral"}>{s.count} Qs</Badge>
+                        </span>
                       </div>
                       <p className="mt-1 text-sm text-muted">{s.description}</p>
                       <p className="mt-2 text-xs text-muted">

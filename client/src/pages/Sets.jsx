@@ -194,7 +194,7 @@ export default function Sets() {
                   <h2 className="display text-xl font-bold">{s.title}</h2>
                   <p className="mt-1 text-sm text-muted">{s.description}</p>
                 </div>
-                <Badge tone={s.seed ? "brand" : "accent"}>{s.seed ? "Built in" : "Custom"}</Badge>
+                <Badge tone={s.seed ? "brand" : s.ai ? "warm" : "accent"}>{s.seed ? "Built in" : s.ai ? "Written by AI" : "Custom"}</Badge>
               </div>
               <div className="mt-3 flex flex-wrap gap-1.5">
                 <Badge>{s.count} questions</Badge>

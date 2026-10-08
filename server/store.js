@@ -47,7 +47,7 @@ export function init(dir = process.env.DATA_DIR || "./data") {
   return dataDir;
 }
 
-function summarize(set) {
+export function summarize(set) {
   const topics = {};
   for (const q of set.questions) topics[q.topic] = (topics[q.topic] || 0) + 1;
   return {
@@ -57,6 +57,7 @@ function summarize(set) {
     count: set.questions.length,
     questionTime: set.questionTime || 20,
     seed: !!set.seed,
+    ai: !!set.ai,
     topics,
     updatedAt: set.updatedAt,
   };
@@ -78,7 +79,7 @@ export function withoutAnswers(set) {
   };
 }
 
-export function saveSet(raw) {
+export function saveSet(raw, { ai = false } = {}) {
   const { errors, set: cleaned } = validateSet(raw, newId);
   if (errors.length) return { ok: false, errors };
   const existing = cleaned.id ? getSet(cleaned.id) : null;
@@ -87,6 +88,7 @@ export function saveSet(raw) {
     ...cleaned,
     id: existing ? existing.id : newId("set_"),
     seed: existing ? !!existing.seed : false,
+    ai: existing ? !!existing.ai : !!ai,
     createdAt: existing ? existing.createdAt : now,
     updatedAt: now,
   };
