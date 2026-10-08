@@ -532,9 +532,9 @@ function verdict(p, report) {
   ].sort((a, b) => b[1] - a[1]);
   const [top, value] = costs[0];
   if (value === 0) return "Perfect game. Every answer right, every answer fast.";
-  if (top === "speed") return `You lost the most points to speed. You got ${report.correct} of ${report.questions} right, but slow answers cost you ${value} points.`;
-  if (top === "errors") return `You lost the most points to wrong answers: ${value} points on ${report.wrong} questions. Take a little more time on the topics below.`;
-  return `You lost the most points by not answering: ${value} points on ${report.skipped} questions. Always try; a guess costs nothing in game mode.`;
+  if (top === "speed") return `Speed is your biggest opportunity. You got ${report.correct} of ${report.questions} right, and faster answers would add up to ${value} more points.`;
+  if (top === "errors") return `Accuracy is your biggest opportunity: ${value} points are waiting on ${report.wrong} questions. A little more time on the topics below will pay off.`;
+  return `Attempting every question is your biggest opportunity: ${value} points were available on ${report.skipped} unanswered questions. A guess costs nothing in game mode.`;
 }
 
 function ReportCard({ end, me }) {
@@ -544,9 +544,9 @@ function ReportCard({ end, me }) {
   const earned = Math.max(0, p.earned);
   const segs = [
     ["Earned", earned, "bg-brand-600"],
-    ["Lost to speed", p.speedCost, "bg-accent"],
-    ["Lost to errors", p.errorCost, "bg-bad"],
-    ["Lost to skipping", p.missedCost, "bg-line"],
+    ["Gain with speed", p.speedCost, "bg-accent"],
+    ["Gain with accuracy", p.errorCost, "bg-bad"],
+    ["Gain by attempting", p.missedCost, "bg-line"],
   ];
   return (
     <div className="grid gap-5 lg:grid-cols-2">
@@ -577,7 +577,7 @@ function ReportCard({ end, me }) {
         </div>
 
         <Card>
-          <h2 className="display text-xl font-bold">Where your points went</h2>
+          <h2 className="display text-xl font-bold">Where your next points are</h2>
           <p className="mt-1 text-base text-ink">{verdict(p, r)}</p>
           <div className="mt-4 flex h-5 w-full overflow-hidden rounded-full bg-line" role="img" aria-label="Breakdown of possible points">
             {segs.map(([label, value, color], i) => (
@@ -609,7 +609,7 @@ function ReportCard({ end, me }) {
             <Stat label="Right after a mistake" value={p.afterMistakeAccuracy === null ? "-" : `${p.afterMistakeAccuracy}%`} sub={`${p.afterMistakeCount} such questions`} className="bg-surface p-3" />
             <Stat label="Overall" value={`${r.accuracy}%`} sub="all questions" tone="brand" className="bg-surface p-3" />
           </div>
-          <p className="mt-3 text-xs text-muted">If your late answers score much lower than your early ones, the clock is beating you, not the questions.</p>
+          <p className="mt-3 text-xs text-muted">If your late answers score lower than your early ones, practice against the clock will pay off fastest.</p>
         </Card>
       </div>
 

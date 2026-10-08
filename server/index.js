@@ -56,6 +56,15 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ error: "Server error" });
 });
 
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled promise rejection", reason);
+});
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught exception, shutting down for a clean restart", err);
+  game.shutdown();
+  setTimeout(() => process.exit(1), 200).unref();
+});
+
 const keepAliveUrl = process.env.KEEPALIVE_URL || (process.env.RENDER_EXTERNAL_URL ? `${process.env.RENDER_EXTERNAL_URL}/api/health` : "");
 if (keepAliveUrl) {
   setInterval(() => fetch(keepAliveUrl).catch(() => {}), 10 * 60 * 1000).unref();

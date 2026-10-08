@@ -8,7 +8,7 @@ const steps = [
   { title: "Host makes a room", text: "Pick a question set. You get a 6-letter code and a QR code for the big screen." },
   { title: "Players join on phones", text: "Type the code and your name. No account, no app." },
   { title: "Race the clock", text: "Everyone sees the same question at the same time. Faster correct answers get more points." },
-  { title: "See why you lost", text: "Your report card shows points lost to speed, to mistakes and to pressure, topic by topic." },
+  { title: "See what to work on", text: "Your report card shows where the next points will come from: speed, accuracy or nerves, topic by topic." },
 ];
 
 const proofs = ["Up to 50 players in a room", "Fair timing for everyone", "Works on slow Wi-Fi", "Report card after every game"];
@@ -82,7 +82,7 @@ export default function Home() {
               </h1>
               <p className="mt-6 max-w-xl text-lg leading-relaxed text-onblue md:text-xl">
                 Up to 50 students answer the same question at the same time, against the clock. The leaderboard updates after every question. At the end you see
-                exactly where you lost points: speed, mistakes or pressure.
+                exactly where your next points will come from: speed, accuracy or nerves.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link to="/host">

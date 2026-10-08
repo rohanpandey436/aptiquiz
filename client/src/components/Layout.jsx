@@ -1,6 +1,7 @@
 import { Link, NavLink } from "react-router-dom";
 import { useConnection } from "../lib/socket.js";
 import { useTheme } from "../lib/theme.js";
+import { useOnline } from "../lib/network.js";
 
 export function Logo({ className = "" }) {
   return (
@@ -44,6 +45,7 @@ function ThemeToggle() {
 
 export function Shell({ children, wide = false, nav = true, full = false, sticky = true }) {
   const connected = useConnection();
+  const online = useOnline();
   return (
     <div className="flex min-h-dvh flex-col bg-canvas">
       <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-card focus:px-3 focus:py-2">
@@ -76,7 +78,11 @@ export function Shell({ children, wide = false, nav = true, full = false, sticky
           </div>
         </div>
       </header>
-      {!connected ? (
+      {!online ? (
+        <div role="status" className="bg-bad-bg px-4 py-2 text-center text-sm font-bold text-bad-ink">
+          You're offline. Your seat and score are safe on the server; we'll reconnect as soon as you're back.
+        </div>
+      ) : !connected ? (
         <div role="status" className="bg-warm-bg px-4 py-2 text-center text-sm font-bold text-warm">
           Reconnecting to the game server. Your score is safe.
         </div>

@@ -31,8 +31,8 @@ AptiQuiz turns aptitude practice into a live game. A host creates a room from a 
 - Light theme by default, with a dark theme one tap away in the header that lasts for the browser session. Every colour comes from one token sheet, so both themes keep the same contrast rules.
 - Live play: server-timed countdown, per-player shuffled options, answer lock-in with the measured answer time, live "answered" counter. Auto-advance by default: the server starts the next question 8 seconds after each reveal with a countdown on every screen; the host can skip ahead or pause.
 - Scoring that rewards speed, with the rule shown to players; optional exam mode with negative marking.
-- Animated leaderboard with movement arrows after each question; on laptops players also see a live standings panel beside the question, on phones a one-line strip that expands. Final results with podium, per-player accuracy, speed and topic strengths.
-- Pressure Profile report card: points lost to speed, errors and skipping; accuracy in the last quarter of the timer versus earlier; accuracy right after a mistake.
+- Animated leaderboard with movement arrows after each question, plus an answer-distribution chart on the host and projector reveal (one bar per option, counts on top, tick on the correct one); on laptops players also see a live standings panel beside the question, on phones a one-line strip that expands. Final results with podium, per-player accuracy, speed and topic strengths.
+- Pressure Profile report card, framed as what to work on next: points available from speed, accuracy and unanswered questions; accuracy in the last quarter of the timer versus earlier; accuracy right after a mistake.
 - Host insights: per-question correct rates, hardest questions, topic accuracy, tab-switch flags, fairness panel, CSV export.
 - College league across rooms, by week, month or all time.
 - Server as referee, latency compensation, reconnection with the same score, cheating resistance (details below). Our own review pass found and fixed: a seat token being lost on a request timeout, a double "next" closing a fresh question, ghost seats when one connection joined twice, an early-close timer surviving a player's return, tie-breaks that favoured skipping, late-joiner maths, and a spectator payload that carried private reports.
@@ -72,7 +72,7 @@ The full design, with the life of a round and the reasoning behind each choice, 
 
 ## What we added
 
-- **Pressure Profile.** The brief says students fail aptitude tests because of speed and pressure, not ability. The report card separates points lost to slowness from points lost to wrong answers, and compares accuracy in the last quarter of the timer with accuracy earlier, plus accuracy on the question right after a mistake. A player learns whether the clock or the content is beating them.
+- **Pressure Profile.** The brief says students fail aptitude tests because of speed and pressure, not ability. The report card shows where the next points will come from: faster answers, more accurate answers, or attempting every question. It also compares accuracy in the last quarter of the timer with accuracy earlier, and accuracy on the question right after a mistake, so a student learns whether the clock or the content is the thing to practice.
 - **Exam mode.** Host-selected negative marking that mirrors real placement tests, with the rule shown to every player before the game.
 - **Faculty insights and CSV export.** Per-question correct rates, hardest questions, topic accuracy and a one-click CSV, so a placement cell can run a league and act on the data.
 - **Fairness panel.** Measured connection delays and the count of rejected late, duplicate and invalid answers, visible to the host after every game.
@@ -109,7 +109,13 @@ npm run loadtest -- --url=http://localhost:3000 --players=50 --fast
 
 Unit tests for the engine (`npm test`) cover shuffling, scoring, exam mode, rejection of duplicate, stale, invalid and late answers, compensation capping, early close, tie-breaks, reconnection and the report maths.
 
-The script creates a room, joins 50 bots, plays a full game, and checks that every bot received every question and reveal, that duplicate and late answers were rejected, that a bot which drops and resumes keeps its seat, and that the final leaderboard is complete and sorted. Latest local run:
+For a live demonstration, host a room on the big screen first and let the bots join it, so the lobby fills with 50 named players and the leaderboard moves with 50 entries when you press Start:
+
+```bash
+npm run loadtest -- --url=https://aptiquiz-1zfx.onrender.com --join=ROOMCODE --players=50
+```
+
+In its default mode the script creates a room, joins 50 bots, plays a full game, and checks that every bot received every question and reveal, that duplicate and late answers were rejected, that a bot which drops and resumes keeps its seat, and that the final leaderboard is complete and sorted. Latest local run:
 
 | Measure | Result |
 |---|---|

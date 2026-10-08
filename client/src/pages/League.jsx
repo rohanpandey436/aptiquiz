@@ -29,13 +29,17 @@ export default function League() {
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
 
-  useEffect(() => {
+  const load = () => {
+    setError("");
     setData(null);
     api
       .get(`/league?period=${period}`)
       .then(setData)
       .catch((err) => setError(err.message));
-  }, [period]);
+  };
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(load, [period]);
 
   useEffect(() => {
     api
@@ -82,9 +86,14 @@ export default function League() {
         </div>
 
         {error ? (
-          <Banner tone="bad" className="mt-6">
-            {error}
-          </Banner>
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <Banner tone="bad" className="flex-1">
+              {error}
+            </Banner>
+            <Button variant="secondary" onClick={load}>
+              Try again
+            </Button>
+          </div>
         ) : null}
         {!data && !error ? (
           <div className="mt-6">

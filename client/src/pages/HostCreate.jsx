@@ -29,15 +29,22 @@ export default function HostCreate() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
+  const loadSets = () => {
+    setError("");
+    setSets(null);
     api
       .get("/sets")
       .then((list) => {
         setSets(list);
         if (list.length) setSetId((current) => current || list[0].id);
       })
-      .catch((err) => setError(err.message));
-  }, []);
+      .catch((err) => {
+        setSets([]);
+        setError(err.message);
+      });
+  };
+
+  useEffect(loadSets, []);
 
   const parsed = useMemo(() => parseQuickQuestions(ownText), [ownText]);
   const ownReady = source === "own" && parsed.count > 0 && parsed.errors.length === 0;
@@ -85,7 +92,14 @@ export default function HostCreate() {
                   <Spinner label="Loading sets" />
                 </div>
               ) : sets.length === 0 ? (
-                <p className="mt-4 text-sm text-muted">No sets yet. Switch to "Write your own".</p>
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  <p className="text-sm text-muted">{error ? "The sets could not be loaded." : 'No sets yet. Switch to "Write your own".'}</p>
+                  {error ? (
+                    <Button size="sm" variant="secondary" onClick={loadSets}>
+                      Try again
+                    </Button>
+                  ) : null}
+                </div>
               ) : (
                 <div className="mt-4 grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Question set">
                   {sets.map((s) => {

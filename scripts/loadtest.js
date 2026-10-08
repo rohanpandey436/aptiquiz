@@ -13,6 +13,15 @@ const SET_ID = args.set || "seed_lightning";
 const COLLEGE = args.college || "Load Test College";
 const FAST = !!args.fast;
 const QUESTION_TIME = Number(args.time || 0);
+const JOIN_CODE = args.join ? String(args.join).toUpperCase() : "";
+
+const NAMES = [
+  "Aarav", "Diya", "Kabir", "Sana", "Ishaan", "Meera", "Rehan", "Anvi", "Vihaan", "Zara",
+  "Arjun", "Nisha", "Dev", "Pooja", "Yash", "Riya", "Kunal", "Tara", "Om", "Navya",
+  "Rohit", "Simran", "Aditya", "Kiara", "Manav", "Ira", "Parth", "Mahi", "Nikhil", "Esha",
+  "Harsh", "Avni", "Sahil", "Prisha", "Ayaan", "Ananya", "Vivaan", "Myra", "Laksh", "Saanvi",
+  "Tanish", "Aarohi", "Rudra", "Pari", "Shaurya", "Kavya", "Dhruv", "Naina", "Aryan", "Ruhi",
+];
 
 const stats = {
   joinMs: [],
@@ -52,7 +61,7 @@ async function runHost() {
 
 async function spawnPlayer(index, code, behaviour) {
   const socket = connect();
-  const name = `Bot ${index + 1}`;
+  const name = JOIN_CODE ? `${NAMES[index % NAMES.length]}${index >= NAMES.length ? ` ${Math.floor(index / NAMES.length) + 1}` : ""}` : `Bot ${index + 1}`;
   const seen = { questions: 0, reveals: 0 };
   let token = null;
   let questionDone = false;
@@ -109,6 +118,7 @@ async function spawnPlayer(index, code, behaviour) {
 }
 
 async function main() {
+  if (JOIN_CODE) return joinExistingRoom();
   console.log(`AptiQuiz load test: ${PLAYERS} players against ${URL} using set ${SET_ID} (practice room, not counted in the league)`);
   const { host, code, hostToken } = await runHost();
   console.log(`Room ${code} created`);
@@ -163,6 +173,29 @@ async function main() {
   for (const p of players) p.socket.disconnect();
   host.disconnect();
   process.exit(ok ? 0 : 1);
+}
+
+async function joinExistingRoom() {
+  console.log(`AptiQuiz demo: ${PLAYERS} simulated players joining room ${JOIN_CODE} on ${URL}`);
+  const behaviours = (i) => (i === 1 ? "duplicate" : i === 2 ? "late" : i === 3 ? "reconnect" : "normal");
+  const players = (await Promise.all(Array.from({ length: PLAYERS }, (_, i) => spawnPlayer(i, JOIN_CODE, behaviours(i))))).filter(Boolean);
+  console.log(`${players.length} players in the lobby. Join latency p50 ${percentile(stats.joinMs, 50)} ms, p95 ${percentile(stats.joinMs, 95)} ms`);
+  console.log("Press Start on the host screen. The bots answer by themselves and this script reports when the game ends.");
+  if (!players.length) process.exit(1);
+  const ended = await new Promise((resolve) => players[0].socket.on("game:end", resolve));
+  const questions = stats.questionsSeen.size;
+  console.log("");
+  console.log("Results");
+  console.log(`  questions played: ${questions}`);
+  console.log(`  answers accepted: ${stats.accepted}`);
+  console.log(`  answers rejected: ${JSON.stringify(stats.rejected)}`);
+  console.log(`  answer ack latency: p50 ${percentile(stats.ackMs, 50)} ms, p95 ${percentile(stats.ackMs, 95)} ms, max ${percentile(stats.ackMs, 100)} ms`);
+  console.log(`  reconnects completed: ${stats.reconnects}`);
+  console.log(`  final top 3: ${ended.top.slice(0, 3).map((p) => `${p.name} ${p.score}`).join(", ")}`);
+  if (stats.errors.length) console.log(`  errors:\n    ${stats.errors.join("\n    ")}`);
+  await sleep(500);
+  for (const p of players) p.socket.disconnect();
+  process.exit(stats.errors.length ? 1 : 0);
 }
 
 main().catch((err) => {

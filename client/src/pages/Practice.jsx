@@ -32,15 +32,22 @@ export default function Practice() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
+  const loadSets = () => {
+    setError("");
+    setSets(null);
     api
       .get("/sets")
       .then((list) => {
         setSets(list);
         if (list.length) setSetId((current) => current || (list.find((s) => s.id === "seed_mix") || list[0]).id);
       })
-      .catch((err) => setError(err.message));
-  }, []);
+      .catch((err) => {
+        setSets([]);
+        setError(err.message);
+      });
+  };
+
+  useEffect(loadSets, []);
 
   const start = async (e) => {
     e.preventDefault();
@@ -66,6 +73,13 @@ export default function Practice() {
             <h2 className="display text-xl font-bold">Question set</h2>
             {!sets ? (
               <Spinner label="Loading sets" />
+            ) : sets.length === 0 ? (
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <p className="text-sm text-muted">The sets could not be loaded.</p>
+                <Button size="sm" variant="secondary" onClick={loadSets}>
+                  Try again
+                </Button>
+              </div>
             ) : (
               <div className="mt-4 grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Question set">
                 {sets.map((s) => {

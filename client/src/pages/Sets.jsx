@@ -34,15 +34,22 @@ export default function Sets() {
 
   const load = () => api.get("/sets").then(setSets).catch((err) => setMessage({ tone: "bad", text: err.message }));
 
-  useEffect(() => {
+  const loadConfig = () => {
+    setMessage(null);
     api
       .get("/config")
       .then((c) => {
         setLocked(!!c.editorLocked);
         if (!c.editorLocked) setUnlocked(true);
       })
-      .catch(() => setLocked(false));
-  }, []);
+      .catch((err) => {
+        setLocked(false);
+        setUnlocked(true);
+        setMessage({ tone: "bad", text: err.message });
+      });
+  };
+
+  useEffect(loadConfig, []);
 
   useEffect(() => {
     if (unlocked) load();
@@ -163,15 +170,22 @@ export default function Sets() {
         </Button>
       </div>
       {message ? (
-        <Banner tone={message.tone} className="mt-4">
-          {message.text}
-        </Banner>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <Banner tone={message.tone} className="flex-1">
+            {message.text}
+          </Banner>
+          {message.tone === "bad" && !sets ? (
+            <Button variant="secondary" onClick={load}>
+              Try again
+            </Button>
+          ) : null}
+        </div>
       ) : null}
-      {!sets ? (
+      {!sets && !(message && message.tone === "bad") ? (
         <div className="mt-6">
           <Spinner label="Loading sets" />
         </div>
-      ) : (
+      ) : !sets ? null : (
         <ul className="mt-6 grid gap-4 md:grid-cols-2">
           {sets.map((s) => (
             <Card as="li" key={s.id} className="flex flex-col">

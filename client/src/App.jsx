@@ -8,6 +8,7 @@ import League from "./pages/League.jsx";
 import Practice from "./pages/Practice.jsx";
 import Sets from "./pages/Sets.jsx";
 import NotFound from "./pages/NotFound.jsx";
+import { ErrorBoundary } from "./components/ErrorBoundary.jsx";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -19,7 +20,7 @@ function ScrollToTop() {
 
 export default function App() {
   return (
-    <>
+    <ErrorBoundary>
       <ScrollToTop />
       <Routes>
         <Route path="/" element={<Home />} />
@@ -33,6 +34,6 @@ export default function App() {
         <Route path="/sets" element={<Sets />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
-    </>
+    </ErrorBoundary>
   );
 }
