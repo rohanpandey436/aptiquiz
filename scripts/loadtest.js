@@ -179,9 +179,13 @@ async function joinExistingRoom() {
   console.log(`AptiQuiz demo: ${PLAYERS} simulated players joining room ${JOIN_CODE} on ${URL}`);
   const behaviours = (i) => (i === 1 ? "duplicate" : i === 2 ? "late" : i === 3 ? "reconnect" : "normal");
   const players = (await Promise.all(Array.from({ length: PLAYERS }, (_, i) => spawnPlayer(i, JOIN_CODE, behaviours(i))))).filter(Boolean);
+  if (!players.length) {
+    const reason = (stats.errors[0] || "").replace(/^[^:]*: join failed /, "");
+    console.log(`Nobody could join room ${JOIN_CODE}. ${reason ? `Server said: ${reason}. ` : ""}Host a room on the big screen first, then pass its 6-letter code with --join=CODE.`);
+    process.exit(1);
+  }
   console.log(`${players.length} players in the lobby. Join latency p50 ${percentile(stats.joinMs, 50)} ms, p95 ${percentile(stats.joinMs, 95)} ms`);
   console.log("Press Start on the host screen. The bots answer by themselves and this script reports when the game ends.");
-  if (!players.length) process.exit(1);
   const ended = await new Promise((resolve) => players[0].socket.on("game:end", resolve));
   const questions = stats.questionsSeen.size;
   console.log("");
