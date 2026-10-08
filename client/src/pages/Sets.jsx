@@ -127,7 +127,7 @@ export default function Sets() {
         <Card as="form" onSubmit={unlock} className="mx-auto max-w-md">
           <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-brand-800">Faculty</p>
           <h1 className="display mt-2 text-3xl font-extrabold">Question editor</h1>
-          <p className="mt-1 text-sm text-muted">This college has locked the editor. Enter the host passcode to create, edit and reuse question sets.</p>
+          <p className="mt-1 text-sm text-muted">This college has locked the editor. Enter the host passcode to create and edit question sets.</p>
           <div className="mt-5 flex flex-col gap-4">
             <Field id="passcode" label="Host passcode">
               <input id="passcode" type="password" className={inputClass} value={passcode} onChange={(e) => setPasscode(e.target.value)} autoComplete="current-password" />
@@ -156,7 +156,7 @@ export default function Sets() {
         <div>
           <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-brand-800">Questions</p>
           <h1 className="display mt-2 text-4xl font-extrabold">Question sets</h1>
-          <p className="mt-2 text-muted">Build a set once, host it as many times as you like. Every built-in set can be duplicated and edited.</p>
+          <p className="mt-2 text-muted">Make a set once and use it in as many games as you like. You can copy and edit any built-in set.</p>
         </div>
         <Button size="lg" onClick={() => openEditor(null)}>
           New set
@@ -317,7 +317,7 @@ function Editor({ set, onChange, onSave, onCancel, busy, message }) {
           {!locked ? (
             <details className="mt-4 text-sm" open>
               <summary className="cursor-pointer font-bold text-brand-700">Add many at once</summary>
-              <p className="mt-2 text-xs text-muted">Type questions plainly: one per block, options as "A) text", then "Answer: B". Or paste JSON.</p>
+              <p className="mt-2 text-xs text-muted">Write a question, its options like "A) 30", then "Answer: B". Leave an empty line between questions. Or paste JSON.</p>
               <textarea className={`${inputClass} mt-2 h-40 font-mono text-xs`} value={importText} onChange={(e) => setImportText(e.target.value)} aria-label="Questions to import" placeholder={QUICK_EXAMPLE} spellCheck={false} />
               {importError ? <p className="mt-1 text-xs font-bold text-bad">{importError}</p> : null}
               <div className="mt-2 flex flex-wrap gap-2">

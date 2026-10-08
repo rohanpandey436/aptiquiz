@@ -237,7 +237,7 @@ function LobbyView({ lobby, code, spectator, busy, onStart, onKick, onUpdate }) 
               </Button>
             ) : null}
           </div>
-          <p className="mt-1 text-sm text-muted">{lobby.college}. Names appear here the moment someone joins.</p>
+          <p className="mt-1 text-sm text-muted">{lobby.college}. Names show up here as people join.</p>
           {lobby.players.length === 0 ? (
             <p className="mt-8 flex items-center justify-center gap-2 text-sm font-bold text-muted">
               <span className="inline-block h-2.5 w-2.5 animate-pulse rounded-full bg-brand-600" aria-hidden="true" />
@@ -265,9 +265,9 @@ function LobbyView({ lobby, code, spectator, busy, onStart, onKick, onUpdate }) 
               <span className="display text-lg font-bold">Room settings</span>
               <span className="text-sm font-bold text-brand-700">{open ? "Hide" : "Change"}</span>
             </button>
-            {open ? <SettingsPanel lobby={lobby} onUpdate={onUpdate} busy={busy} /> : <p className="mt-1 text-sm text-muted">Change the set, the pace, exam mode or auto-advance before you start.</p>}
+            {open ? <SettingsPanel lobby={lobby} onUpdate={onUpdate} busy={busy} /> : <p className="mt-1 text-sm text-muted">Change the questions, the time, exam mode or auto-advance before you start.</p>}
             <p className="mt-4 text-xs text-muted">
-              Second screen? Open <span className="font-bold text-ink">{`${window.location.host}/watch/${code}`}</span> on the projector. It follows the game without host controls.
+              Want it on a projector? Open <span className="font-bold text-ink">{`${window.location.host}/watch/${code}`}</span> on that screen. It shows the game without the host buttons.
             </p>
           </Card>
         ) : null}
@@ -312,7 +312,7 @@ function SettingsPanel({ lobby, onUpdate, busy }) {
         </div>
       </Field>
       <div className="flex flex-col gap-3">
-        <Toggle id="lobby-auto" compact checked={lobby.settings.autoAdvance} onChange={(v) => onUpdate({ autoAdvance: v })} title="Auto-advance" text="Next question 8 s after each reveal." />
+        <Toggle id="lobby-auto" compact checked={lobby.settings.autoAdvance} onChange={(v) => onUpdate({ autoAdvance: v })} title="Auto-advance" text="Next question starts 8 s after the answer is shown." />
         <Toggle id="lobby-exam" compact checked={lobby.settings.examMode} onChange={(v) => onUpdate({ examMode: v })} title="Exam mode" text="Wrong answers cost 250 points." />
       </div>
     </div>
@@ -417,7 +417,7 @@ function RevealView({ reveal, flags, spectator, busy, onNext, onAuto, onEnd }) {
       </div>
       <Card className="animate-rise">
         <h2 className="display text-2xl font-bold">Live standings</h2>
-        <p className="mb-4 text-sm text-muted">Top 10 of {reveal.leaderboard.length}. Arrows show movement this round.</p>
+        <p className="mb-4 text-sm text-muted">Top 10 of {reveal.leaderboard.length}. Arrows show who moved up or down.</p>
         <Leaderboard entries={reveal.leaderboard} limit={10} />
       </Card>
     </div>

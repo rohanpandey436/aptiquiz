@@ -212,7 +212,7 @@ export default function Play() {
           <div className="-mx-4 rounded-b-[32px] bg-brand-gradient px-6 pb-16 pt-8 text-white shadow-pop">
             <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-brand-100">Player</p>
             <h1 className="display mt-2 text-4xl font-extrabold">Join a game</h1>
-            <p className="mt-2 text-brand-100">Ask your host for the room code on the big screen.</p>
+            <p className="mt-2 text-brand-100">Get the room code from your host.</p>
           </div>
           <Card as="form" onSubmit={submitJoin} className="relative -mt-10 rounded-3xl border-0 shadow-pop md:p-7">
             <div className="flex flex-col gap-4">
@@ -316,7 +316,7 @@ function LobbyView({ lobby, me }) {
       </div>
       <div>
         <h1 className="display text-4xl font-extrabold">You're in, {me?.name}</h1>
-        <p className="mt-2 text-muted">Look at the host screen. The first question appears here the moment the host presses Start.</p>
+        <p className="mt-2 text-muted">Watch the big screen. The first question shows here when the host starts.</p>
       </div>
       <Card className="w-full text-left">
         <div className="flex items-end justify-between gap-3">
@@ -367,7 +367,7 @@ function StandingsPanel({ standings, me, compact = false }) {
     return compact ? null : (
       <Card className="hidden lg:block">
         <h2 className="display text-xl font-bold">Standings</h2>
-        <p className="mt-1 text-sm text-muted">The leaderboard appears here after the first question.</p>
+        <p className="mt-1 text-sm text-muted">The leaderboard shows here after the first question.</p>
       </Card>
     );
   }
@@ -423,10 +423,10 @@ function QuestionView({ question, selected, lock, progress, standings, me, onAns
             "Too late, that round had already closed."
           ) : locked ? (
             <span key="locked" className="rise inline-block">
-              Locked in{lock?.elapsedMs ? <span className="ml-1 rounded-full bg-ink px-2 py-0.5 text-xs text-white">{seconds(lock.elapsedMs)}</span> : null}. Waiting for the reveal.
+              Locked in{lock?.elapsedMs ? <span className="ml-1 rounded-full bg-ink px-2 py-0.5 text-xs text-white">{seconds(lock.elapsedMs)}</span> : null}. Waiting for the answer.
             </span>
           ) : (
-            "Tap your answer. Faster correct answers score more."
+            "Tap your answer. Faster correct answers get more points."
           )}
           {progress ? (
             <span className="block text-xs font-normal">
@@ -497,7 +497,7 @@ function RevealView({ reveal, me }) {
           </div>
         ) : null}
         <p className="text-center text-sm font-bold text-muted">
-          {reveal.autoAdvance && reveal.autoNextAt ? <Countdown endsAt={reveal.autoNextAt} prefix={reveal.isLast ? "Results in" : "Next question in"} /> : "Next question comes from the host."}
+          {reveal.autoAdvance && reveal.autoNextAt ? <Countdown endsAt={reveal.autoNextAt} prefix={reveal.isLast ? "Results in" : "Next question in"} /> : "The host will start the next question."}
         </p>
       </div>
       {reveal.me ? (
@@ -532,10 +532,10 @@ function verdict(p, report) {
     ["missed", p.missedCost],
   ].sort((a, b) => b[1] - a[1]);
   const [top, value] = costs[0];
-  if (value === 0) return "A clean sheet. Every question right, every answer fast.";
-  if (top === "speed") return `Speed, not knowledge, cost you the most. You got ${report.correct} of ${report.questions} right but left ${value} points on the clock.`;
-  if (top === "errors") return `Wrong answers cost you the most: ${value} points across ${report.wrong} questions. Slow down a touch on the topics below.`;
-  return `Unanswered questions cost you the most: ${value} points across ${report.skipped} questions. Always attempt; a guess costs nothing in game mode.`;
+  if (value === 0) return "Perfect game. Every answer right, every answer fast.";
+  if (top === "speed") return `You lost the most points to speed. You got ${report.correct} of ${report.questions} right, but slow answers cost you ${value} points.`;
+  if (top === "errors") return `You lost the most points to wrong answers: ${value} points on ${report.wrong} questions. Take a little more time on the topics below.`;
+  return `You lost the most points by not answering: ${value} points on ${report.skipped} questions. Always try; a guess costs nothing in game mode.`;
 }
 
 function ReportCard({ end, me }) {
@@ -600,17 +600,17 @@ function ReportCard({ end, me }) {
           <h2 className="display text-xl font-bold">Under pressure</h2>
           <div className="mt-3 grid grid-cols-2 gap-3">
             <Stat
-              label="Last-quarter answers"
+              label="Late answers"
               value={p.lateAccuracy === null ? "-" : `${p.lateAccuracy}%`}
-              sub={`${p.lateCount} with under 25% time left`}
+              sub={`${p.lateCount} with under a quarter of the time left`}
               tone={p.lateAccuracy !== null && p.earlyAccuracy !== null && p.lateAccuracy < p.earlyAccuracy ? "bad" : "neutral"}
               className="bg-surface p-3"
             />
-            <Stat label="Early answers" value={p.earlyAccuracy === null ? "-" : `${p.earlyAccuracy}%`} sub={`${p.earlyCount} with time to spare`} className="bg-surface p-3" />
+            <Stat label="Early answers" value={p.earlyAccuracy === null ? "-" : `${p.earlyAccuracy}%`} sub={`${p.earlyCount} answered with time to spare`} className="bg-surface p-3" />
             <Stat label="Right after a mistake" value={p.afterMistakeAccuracy === null ? "-" : `${p.afterMistakeAccuracy}%`} sub={`${p.afterMistakeCount} such questions`} className="bg-surface p-3" />
             <Stat label="Overall" value={`${r.accuracy}%`} sub="all questions" tone="brand" className="bg-surface p-3" />
           </div>
-          <p className="mt-3 text-xs text-muted">If the last-quarter number is far below the early one, the clock is beating you, not the questions.</p>
+          <p className="mt-3 text-xs text-muted">If your late answers score much lower than your early ones, the clock is beating you, not the questions.</p>
         </Card>
       </div>
 

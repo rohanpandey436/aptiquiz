@@ -24,8 +24,8 @@ export function OptionTile({ index, text, state = "idle", count, total, onClick,
   const chip = size === "lg" ? "h-12 w-12 rounded-2xl text-xl" : "h-10 w-10 rounded-xl text-base";
   const base = "press relative flex w-full items-center gap-3 rounded-tile border-2 text-left font-bold animate-rise";
   const styles = {
-    idle: `${color} border-transparent text-white shadow-tile ${interactive ? "hover:brightness-110 active:translate-y-1 active:shadow-tile-pressed" : ""} ${disabled ? "opacity-60 saturate-50" : ""}`,
-    selected: `${color} border-ink text-white ring-4 ring-ink/15 shadow-tile-pressed translate-y-1 animate-pop`,
+    idle: `${color} border-transparent text-white shadow-[0_12px_24px_-14px_rgba(15,23,42,0.55)] ${interactive ? "hover:-translate-y-0.5 hover:brightness-110 hover:shadow-[0_16px_28px_-14px_rgba(15,23,42,0.6)] active:translate-y-0 active:scale-[0.99] active:shadow-none" : ""} ${disabled ? "opacity-60 saturate-50" : ""}`,
+    selected: `${color} border-ink text-white ring-4 ring-ink/15 shadow-none animate-pop`,
     correct: "bg-good border-good text-white animate-pop",
     wrong: "bg-bad-bg border-bad text-bad",
     dim: "bg-surface-2 border-line text-muted",

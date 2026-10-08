@@ -69,7 +69,7 @@ export default function HostCreate() {
       <div className="mx-auto max-w-3xl">
         <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-brand-800">Host</p>
         <h1 className="display mt-2 text-4xl font-extrabold">Host a game</h1>
-        <p className="mt-2 text-muted">Pick a question set or write your own, choose a pace, and you get a room code for the big screen. Everything can still change in the lobby.</p>
+        <p className="mt-2 text-muted">Pick questions, set the time, and get a room code for the big screen. You can still change settings in the lobby.</p>
 
         <form onSubmit={create} className="mt-8 flex flex-col gap-6">
           <Card>
@@ -118,12 +118,12 @@ export default function HostCreate() {
                 <Field id="own-title" label="Set name">
                   <input id="own-title" className={inputClass} value={ownTitle} onChange={(e) => setOwnTitle(e.target.value)} placeholder="Friday practice" maxLength={80} />
                 </Field>
-                <Field id="own-text" label="Questions, written plainly" hint='One question per block, options as "A) text", mark the answer with "Answer: B" or a * before the correct option. Optional lines: "Topic: logical" and "Why: ...".'>
+                <Field id="own-text" label="Questions, written plainly" hint='Write a question, then its options like "A) 30", then "Answer: B". Leave an empty line between questions. Optional: "Topic: logical" and "Why: ...".'>
                   <textarea id="own-text" className={`${inputClass} min-h-56 font-mono text-sm`} value={ownText} onChange={(e) => setOwnText(e.target.value)} placeholder={QUICK_EXAMPLE} spellCheck={false} />
                 </Field>
                 <div className="flex flex-wrap items-center gap-2 text-sm">
                   {parsed.count === 0 ? (
-                    <span className="text-muted">Start typing, or</span>
+                    <span className="text-muted">Type your questions, or</span>
                   ) : parsed.errors.length ? (
                     <Badge tone="bad">
                       {parsed.count} {parsed.count === 1 ? "question" : "questions"}, {parsed.errors.length} to fix
@@ -166,8 +166,8 @@ export default function HostCreate() {
                 ))}
               </select>
             </Field>
-            <Toggle id="auto" checked={autoAdvance} onChange={setAutoAdvance} title="Auto-advance" text="The next question starts by itself 8 seconds after each reveal. You can still press Next or pause." />
-            <Toggle id="exam" checked={examMode} onChange={setExamMode} title="Exam mode: negative marking" text="A wrong answer costs 250 points, like a real placement test. Players see this rule in the lobby." />
+            <Toggle id="auto" checked={autoAdvance} onChange={setAutoAdvance} title="Auto-advance" text="The next question starts on its own 8 seconds after the answer is shown. You can still press Next or pause." />
+            <Toggle id="exam" checked={examMode} onChange={setExamMode} title="Exam mode (negative marking)" text="A wrong answer costs 250 points, like a real placement test. Players see this in the lobby." />
           </Card>
 
           {error ? <Banner tone="bad">{error}</Banner> : null}
@@ -176,7 +176,7 @@ export default function HostCreate() {
             <Button type="submit" size="lg" disabled={!canCreate || busy}>
               {busy ? "Creating room" : "Create room"}
             </Button>
-            <span className="text-sm text-muted">{source === "own" ? "Your set is saved for reuse when the room is created." : "You can start the game once the first player joins."}</span>
+            <span className="text-sm text-muted">{source === "own" ? "Your questions are saved so you can use them again." : "You can start as soon as the first player joins."}</span>
           </div>
         </form>
       </div>

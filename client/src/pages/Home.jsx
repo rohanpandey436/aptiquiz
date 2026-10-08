@@ -6,19 +6,19 @@ import { lastName } from "../lib/storage.js";
 import { useReveal } from "../lib/useReveal.js";
 
 const steps = [
-  { title: "Host makes a room", text: "Pick a question set, get a 6-letter code and a QR code on the big screen." },
-  { title: "Players join on phones", text: "Type the code and a name. No account, no app, nothing to install." },
-  { title: "Race the clock", text: "Everyone sees the same question at the same moment. Faster correct answers score more." },
-  { title: "See why you lost", text: "A report card shows points lost to speed, to mistakes and to pressure, topic by topic." },
+  { title: "Host makes a room", text: "Pick a question set. You get a 6-letter code and a QR code for the big screen." },
+  { title: "Players join on phones", text: "Type the code and your name. No account, no app." },
+  { title: "Race the clock", text: "Everyone sees the same question at the same time. Faster correct answers get more points." },
+  { title: "See why you lost", text: "Your report card shows points lost to speed, to mistakes and to pressure, topic by topic." },
 ];
 
-const proofs = ["Up to 50 players a room", "Server-timed rounds", "Fair on slow Wi-Fi", "Report card after every game"];
+const proofs = ["Up to 50 players in a room", "Fair timing for everyone", "Works on slow Wi-Fi", "Report card after every game"];
 
 const fairness = [
-  "The server runs the clock and scores every answer. Your phone decides nothing.",
-  "Your connection delay is measured and subtracted, so a slow network is not a handicap.",
-  "Options are shuffled per player and the correct answer never reaches a phone before the reveal.",
-  "Refresh or lose signal mid-game and you come back with the same score on the current question.",
+  "The server keeps the time and scores every answer, not your phone.",
+  "Slow internet is measured and taken off your time, so it does not cost you points.",
+  "Every phone shows the options in a different order, and the right answer stays on the server until the reveal.",
+  "Lost signal or refreshed? You come back to the same question with the same score.",
 ];
 
 const previewRows = [
@@ -75,7 +75,7 @@ export default function Home() {
             <div>
               <span className="inline-flex items-center gap-2 rounded-full bg-accent px-3 py-1 text-[11px] font-extrabold uppercase tracking-[0.14em] text-ink">
                 <span className="h-2 w-2 rounded-full bg-ink" aria-hidden="true" />
-                Live aptitude arena
+                Live aptitude quiz
               </span>
               <h1 className="display mt-5 text-5xl font-extrabold leading-[0.95] sm:text-6xl md:text-[56px] lg:text-7xl">
                 Aptitude practice
@@ -83,8 +83,8 @@ export default function Home() {
                 as a <span className="text-accent">live game.</span>
               </h1>
               <p className="mt-6 max-w-xl text-lg leading-relaxed text-brand-100 md:text-xl">
-                Fifty students, one question at a time, against the clock. A leaderboard that moves after every round, and a report card that says exactly what cost you
-                points: speed, mistakes or pressure.
+                Up to 50 students answer the same question at the same time, against the clock. The leaderboard updates after every question. At the end you see
+                exactly where you lost points: speed, mistakes or pressure.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link to="/host">
@@ -112,7 +112,7 @@ export default function Home() {
                 <h2 id="join-title" className="display text-2xl font-bold">
                   Join a game
                 </h2>
-                <p className="mt-1 text-sm text-muted">Ask your host for the room code shown on the big screen.</p>
+                <p className="mt-1 text-sm text-muted">Get the room code from your host.</p>
                 <div className="mt-6 flex flex-col gap-4">
                   <Field id="join-code" label="Room code">
                     <input
@@ -150,9 +150,9 @@ export default function Home() {
           <div className="reveal">
             <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-brand-800">How it works</p>
             <h2 id="how-title" className="display mt-3 text-4xl font-extrabold leading-tight md:text-5xl">
-              Four steps. Ten minutes. No manual.
+              Four steps. Ten minutes. Nothing to learn.
             </h2>
-            <p className="mt-4 max-w-md text-muted">Built for a classroom, a hostel common room or a placement cell session. Nobody installs anything.</p>
+            <p className="mt-4 max-w-md text-muted">Works in a classroom, a hostel room or a placement session. Nobody installs anything.</p>
             <div className="mt-8 hidden max-w-xs md:block">
               <LeaderboardPreview />
             </div>
@@ -160,7 +160,7 @@ export default function Home() {
           <ol className="relative flex flex-col gap-7 border-l-2 border-brand-200 pl-8">
             {steps.map((s, i) => (
               <li key={s.title} className="reveal relative" style={{ transitionDelay: `${i * 90}ms` }}>
-                <span className="display absolute -left-[3.1rem] top-0 flex h-10 w-10 items-center justify-center rounded-xl bg-brand-gradient text-sm font-bold text-white shadow-button">
+                <span className="display absolute -left-[3.1rem] top-0 flex h-10 w-10 items-center justify-center rounded-xl bg-brand-gradient text-sm font-bold text-white shadow-card">
                   0{i + 1}
                 </span>
                 <h3 className="display text-xl font-bold">{s.title}</h3>
@@ -180,7 +180,7 @@ export default function Home() {
         <div className="grid gap-6 md:grid-cols-2">
           <div className="reveal rounded-hero bg-tint-amber p-8">
             <h2 id="scoring-title" className="display text-3xl font-extrabold">
-              Scoring, in the open
+              How scoring works
             </h2>
             <ul className="mt-5 space-y-3 text-muted">
               <li>
@@ -191,16 +191,16 @@ export default function Home() {
                 <span className="font-bold text-ink">Wrong or skipped:</span> 0 points in game mode.
               </li>
               <li>
-                <span className="font-bold text-ink">Exam mode:</span> a wrong answer costs 250 points, the way real placement tests use negative marking. The host picks the
-                mode and every player sees it in the lobby.
+                <span className="font-bold text-ink">Exam mode:</span> a wrong answer costs 250 points, like negative marking in a real placement test. The host picks this
+                and every player sees it in the lobby.
               </li>
               <li>
-                <span className="font-bold text-ink">Ties:</span> broken by total answering time, faster first.
+                <span className="font-bold text-ink">Ties:</span> the faster player wins.
               </li>
             </ul>
           </div>
           <div className="reveal rounded-hero bg-tint-green p-8" style={{ transitionDelay: "120ms" }}>
-            <h2 className="display text-3xl font-extrabold">Fair by design</h2>
+            <h2 className="display text-3xl font-extrabold">Fair for everyone</h2>
             <ul className="mt-5 space-y-3 text-muted">
               {fairness.map((f) => (
                 <li key={f} className="flex gap-3">
@@ -218,8 +218,8 @@ export default function Home() {
       <section className="bg-tint-blue">
         <div className="mx-auto flex max-w-6xl flex-col items-start gap-6 px-4 py-14 md:flex-row md:items-center md:justify-between md:py-20">
           <div className="reveal">
-            <h2 className="display text-3xl font-extrabold md:text-5xl">Host your first room in thirty seconds.</h2>
-            <p className="mt-3 max-w-xl text-muted">Six built-in question sets, or write your own. Scores feed your college league from the very first game.</p>
+            <h2 className="display text-3xl font-extrabold md:text-5xl">Start your first game in 30 seconds.</h2>
+            <p className="mt-3 max-w-xl text-muted">Use a built-in question set or write your own. Every game adds points to your college in the league.</p>
           </div>
           <Link to="/host" className="reveal" style={{ transitionDelay: "120ms" }}>
             <Button size="lg">Host a game</Button>

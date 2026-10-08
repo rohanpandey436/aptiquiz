@@ -53,7 +53,7 @@ export function Shell({ children, wide = false, nav = true, full = false, sticky
         {children}
       </main>
       <footer className="border-t border-line px-4 py-4 text-center text-xs text-muted">
-        Every player in a room is a real person. AptiQuiz has no AI players, AI chat or AI-generated answers.
+        Everyone in a room is a real person. There are no AI players and no AI answers.
       </footer>
     </div>
   );

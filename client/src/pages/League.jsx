@@ -59,8 +59,8 @@ export default function League() {
               <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-brand-100">College league</p>
               <h1 className="display mt-2 text-4xl font-extrabold md:text-5xl">Every game counts for your college.</h1>
               <p className="mt-3 max-w-xl text-brand-100">
-                There is nothing to sign up for. When a host creates a room they name the college, and when the game ends every player's points join that college's
-                total. Play more rooms, climb the table.
+                Nothing to sign up for. The host picks a college when creating a room. When the game ends, every player's points are added to that college.
+                Play more, climb higher.
               </p>
             </div>
             <div className="flex flex-col gap-3 md:items-end">
@@ -96,9 +96,9 @@ export default function League() {
           <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_1fr]">
             <Card>
               <h2 className="display text-2xl font-bold">Top colleges</h2>
-              <p className="text-sm text-muted">Ranked by total points across every finished room</p>
+              <p className="text-sm text-muted">Ranked by total points from every finished game</p>
               {colleges.length === 0 ? (
-                <p className="mt-6 text-sm text-muted">{q ? "No college matches that search." : "No finished games yet. Host one and the table fills itself."}</p>
+                <p className="mt-6 text-sm text-muted">{q ? "No college matches that search." : "No finished games yet. Host one and the table fills up."}</p>
               ) : (
                 <ol className="mt-4 flex flex-col gap-2">
                   {colleges.map((c, i) => (
@@ -122,7 +122,7 @@ export default function League() {
             <div className="flex flex-col gap-6">
               <Card>
                 <h2 className="display text-2xl font-bold">Top players</h2>
-                <p className="text-sm text-muted">Points added up across every game they played</p>
+                <p className="text-sm text-muted">Points added up from every game they played</p>
                 {players.length === 0 ? (
                   <p className="mt-6 text-sm text-muted">Nobody on the board yet.</p>
                 ) : (

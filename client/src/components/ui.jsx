@@ -1,23 +1,25 @@
 const buttonStyles = {
-  primary: "bg-brand-gradient text-white shadow-button hover:brightness-110 active:translate-y-[3px] active:shadow-none disabled:bg-none disabled:bg-brand-200 disabled:shadow-none disabled:text-white",
-  accent: "bg-accent text-ink shadow-[0_3px_0_0_#b45309] hover:brightness-105 active:translate-y-[3px] active:shadow-none disabled:bg-accent-soft disabled:text-muted disabled:shadow-none",
-  secondary: "bg-white text-ink border-2 border-line shadow-button-soft hover:bg-surface active:translate-y-[3px] active:shadow-none disabled:text-muted disabled:shadow-none",
+  primary:
+    "bg-brand-700 text-white shadow-[0_10px_22px_-10px_rgba(29,78,216,0.65)] hover:-translate-y-0.5 hover:bg-brand-800 hover:shadow-[0_14px_26px_-10px_rgba(29,78,216,0.7)] active:translate-y-0 active:shadow-none disabled:bg-brand-200 disabled:shadow-none disabled:hover:translate-y-0",
+  accent:
+    "bg-accent text-ink shadow-[0_10px_22px_-10px_rgba(245,158,11,0.75)] hover:-translate-y-0.5 hover:brightness-105 hover:shadow-[0_14px_26px_-10px_rgba(245,158,11,0.8)] active:translate-y-0 active:shadow-none disabled:bg-accent-soft disabled:text-muted disabled:shadow-none disabled:hover:translate-y-0",
+  secondary: "bg-white text-ink ring-1 ring-inset ring-line shadow-sm hover:bg-surface hover:ring-brand-200 active:bg-surface-2 disabled:text-muted disabled:shadow-none",
   ghost: "bg-transparent text-brand-700 hover:bg-brand-50 disabled:text-muted",
-  danger: "bg-white text-bad border-2 border-bad/30 hover:bg-bad-bg disabled:text-muted",
-  white: "bg-white text-brand-800 shadow-[0_3px_0_0_#b6ceff] hover:bg-brand-50 active:translate-y-[3px] active:shadow-none",
+  danger: "bg-white text-bad ring-1 ring-inset ring-bad/30 hover:bg-bad-bg disabled:text-muted",
+  white: "bg-white text-brand-800 shadow-[0_10px_22px_-10px_rgba(15,23,42,0.45)] hover:-translate-y-0.5 hover:bg-brand-50 active:translate-y-0 active:shadow-none",
 };
 
 const buttonSizes = {
-  sm: "px-3 py-1.5 text-sm rounded-lg",
-  md: "px-4 py-2.5 text-base rounded-xl",
-  lg: "px-6 py-3.5 text-lg rounded-2xl",
+  sm: "px-3.5 py-1.5 text-sm",
+  md: "px-5 py-2.5 text-[15px]",
+  lg: "px-7 py-3.5 text-base",
 };
 
 export function Button({ variant = "primary", size = "md", className = "", type = "button", ...props }) {
   return (
     <button
       type={type}
-      className={`press inline-flex items-center justify-center gap-2 font-bold disabled:cursor-not-allowed ${buttonStyles[variant]} ${buttonSizes[size]} ${className}`}
+      className={`press inline-flex items-center justify-center gap-2 rounded-full font-semibold tracking-[0.01em] disabled:cursor-not-allowed ${buttonStyles[variant]} ${buttonSizes[size]} ${className}`}
       {...props}
     />
   );
@@ -113,7 +115,7 @@ export function Segmented({ options, value, onChange, label }) {
           role="tab"
           aria-selected={value === key}
           onClick={() => onChange(key)}
-          className={`press rounded-full px-4 py-2 text-sm font-bold ${value === key ? "bg-ink text-white shadow-sm" : "text-muted hover:text-ink"}`}
+          className={`press rounded-full px-4 py-2 text-sm font-semibold ${value === key ? "bg-white text-ink shadow-sm ring-1 ring-inset ring-line" : "text-muted hover:text-ink"}`}
         >
           {text}
         </button>
