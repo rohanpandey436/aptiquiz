@@ -365,3 +365,36 @@ test("answer keys are hidden for sets that are being played", () => {
   game.endGame(room);
   assert.equal(game.setsInPlay().has("seed_lightning"), false);
 });
+
+test("a solo practice question closes the moment its player answers", () => {
+  const io = fakeIo();
+  const game = new GameManager(io);
+  managers.push(game);
+  const { room } = game.createRoom({ college: "Practice", setId: "seed_lightning", questionTime: 10, practice: true });
+  const a = game.joinPlayer(room, fakeSocket("solo"), "Rohan", "10.0.0.9").player;
+  game.startGame(room);
+  afterReading(game, room);
+  assert.equal(game.submitAnswer(room, a, 0, 0).accepted, true);
+  assert.equal(room.status, "reveal");
+});
+
+test("a practice player moves on when ready, a hosted-game player cannot", () => {
+  const io = fakeIo();
+  const game = new GameManager(io);
+  managers.push(game);
+  const { room } = game.createRoom({ college: "Practice", setId: "seed_lightning", questionTime: 10, practice: true, autoAdvance: false });
+  const a = game.joinPlayer(room, fakeSocket("solo2"), "Rohan", "10.0.0.9").player;
+  game.startGame(room);
+  assert.ok(game.nextPractice(room, a).error, "nothing to move on from before answering");
+  afterReading(game, room);
+  game.submitAnswer(room, a, 0, 0);
+  assert.equal(room.status, "reveal");
+  assert.equal(game.nextPractice(room, a).ok, true);
+  assert.equal(room.status, "question");
+  assert.equal(room.qIndex, 1);
+  const hosted = game.createRoom({ college: "Test College", setId: "seed_lightning", questionTime: 10 }).room;
+  game.attachHost(hosted, fakeSocket("h2"));
+  const h = game.joinPlayer(hosted, fakeSocket("hp"), "Rohan", "10.0.0.8").player;
+  game.startGame(hosted);
+  assert.ok(game.nextPractice(hosted, h).error);
+});

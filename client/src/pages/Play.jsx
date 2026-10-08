@@ -185,11 +185,33 @@ export default function Play() {
     [phase, question, selected],
   );
 
+  const moving = useRef(false);
+  const practising = (phase === "question" && !!question?.practice) || (phase === "reveal" && !!reveal?.practice);
+  const canMoveOn = (phase === "reveal" && !!reveal?.practice) || (phase === "question" && !!question?.practice && selected !== null && !!lock && !lock.late);
+  const moveOn = useCallback(async () => {
+    if (!canMoveOn || moving.current) return;
+    moving.current = true;
+    try {
+      const res = await request("player:next");
+      if (!res.ok) setError(res.error || "Could not move on. Try again.");
+    } finally {
+      moving.current = false;
+    }
+  }, [canMoveOn]);
+
   useEffect(() => {
     const onKey = (e) => {
-      if (phase !== "question" || !question) return;
       if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
-      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+      const tag = e.target.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "BUTTON" || tag === "A") return;
+      if (e.key === "Enter") {
+        if (canMoveOn) {
+          e.preventDefault();
+          moveOn();
+        }
+        return;
+      }
+      if (phase !== "question" || !question) return;
       const digit = Number(e.key);
       const letter = "abcdef".indexOf(e.key.toLowerCase());
       const pos = Number.isInteger(digit) && digit >= 1 ? digit - 1 : letter;
@@ -197,7 +219,7 @@ export default function Play() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [phase, question, answer]);
+  }, [phase, question, answer, canMoveOn, moveOn]);
 
   const endPractice = async () => {
     if (!window.confirm("End this practice session and see your report?")) return;
@@ -296,7 +318,7 @@ export default function Play() {
   }
 
   return (
-    <Shell nav={false} full>
+    <Shell nav={false} full actions={practising ? <EndPracticeButton onClick={endPractice} /> : null}>
       <div className="mx-auto max-w-5xl px-4 py-5">
         {error ? (
           <Banner tone="bad" className="mb-4">
@@ -305,9 +327,9 @@ export default function Play() {
         ) : null}
         {phase === "lobby" && lobby ? <LobbyView lobby={lobby} me={me} /> : null}
         {phase === "question" && question ? (
-          <QuestionView question={question} selected={selected} lock={lock} progress={progress} standings={standings} me={me} onAnswer={answer} onEndPractice={question.practice ? endPractice : null} />
+          <QuestionView question={question} selected={selected} lock={lock} progress={progress} standings={standings} me={me} onAnswer={answer} practice={!!question.practice} />
         ) : null}
-        {phase === "reveal" && reveal ? <RevealView reveal={reveal} me={me} onEndPractice={reveal.practice ? endPractice : null} /> : null}
+        {phase === "reveal" && reveal ? <RevealView reveal={reveal} me={me} onNext={reveal.practice ? moveOn : null} /> : null}
         {phase === "ended" && end ? <ReportCard end={end} me={me} /> : null}
       </div>
     </Shell>
@@ -406,17 +428,15 @@ function StandingsPanel({ standings, me, compact = false }) {
 
 function EndPracticeButton({ onClick }) {
   return (
-    <div className="flex justify-center">
-      <Button variant="ghost" size="sm" onClick={onClick}>
-        End practice and see my report
-      </Button>
-    </div>
+    <Button variant="secondary" size="sm" onClick={onClick} className="mr-1">
+      End practice
+    </Button>
   );
 }
 
 const SETTLE_MS = 350;
 
-function QuestionView({ question, selected, lock, progress, standings, me, onAnswer, onEndPractice }) {
+function QuestionView({ question, selected, lock, progress, standings, me, onAnswer, practice }) {
   const locked = selected !== null;
   const [settled, setSettled] = useState(false);
   useEffect(() => {
@@ -460,14 +480,14 @@ function QuestionView({ question, selected, lock, progress, standings, me, onAns
             </span>
           ) : null}
         </div>
-        {onEndPractice ? <EndPracticeButton onClick={onEndPractice} /> : <StandingsPanel standings={standings} me={me} compact />}
+        {practice ? null : <StandingsPanel standings={standings} me={me} compact />}
       </div>
       <div className="flex flex-col gap-4">
-        {onEndPractice ? null : <StandingsPanel standings={standings} me={me} />}
+        {practice ? null : <StandingsPanel standings={standings} me={me} />}
         <Card className="hidden lg:block">
           <h2 className="display text-xl font-bold">Scoring</h2>
           <p className="mt-1 text-sm text-muted">{question.scoring.text}</p>
-          <p className="mt-2 text-xs text-muted">Keys 1 to 6 or A to F answer too.</p>
+          <p className="mt-2 text-xs text-muted">{practice ? "Keys 1 to 6 or A to F answer. Enter moves on once you have answered." : "Keys 1 to 6 or A to F answer too."}</p>
         </Card>
       </div>
     </div>
@@ -483,7 +503,7 @@ function CountUp({ value }) {
   return <>{signed(shown)}</>;
 }
 
-function RevealView({ reveal, me, onEndPractice }) {
+function RevealView({ reveal, me, onNext }) {
   const you = reveal.you;
   const tone = you.answered ? (you.correct ? "good" : "bad") : "neutral";
   const title = !you.answered ? "No answer" : you.correct ? "Correct" : "Not this time";
@@ -522,10 +542,24 @@ function RevealView({ reveal, me, onEndPractice }) {
             <p className="mt-1 text-sm text-ink">{reveal.explanation}</p>
           </div>
         ) : null}
-        <p className="text-center text-sm font-bold text-muted">
-          {reveal.autoAdvance && reveal.autoNextAt ? <Countdown endsAt={reveal.autoNextAt} prefix={reveal.isLast ? "Results in" : "Next question in"} /> : "The host will start the next question."}
-        </p>
-        {onEndPractice ? <EndPracticeButton onClick={onEndPractice} /> : null}
+        {onNext ? (
+          <div className="flex flex-col items-center gap-2">
+            <Button size="lg" onClick={onNext}>
+              {reveal.isLast ? "See my report" : "Next question"}
+            </Button>
+            <p className="text-center text-sm font-bold text-muted">
+              {reveal.autoAdvance && reveal.autoNextAt ? (
+                <Countdown endsAt={reveal.autoNextAt} prefix={reveal.isLast ? "Press Enter, or wait for your results in" : "Press Enter, or wait for the next question in"} />
+              ) : (
+                "Press Enter or tap the button when you're ready."
+              )}
+            </p>
+          </div>
+        ) : (
+          <p className="text-center text-sm font-bold text-muted">
+            {reveal.autoAdvance && reveal.autoNextAt ? <Countdown endsAt={reveal.autoNextAt} prefix={reveal.isLast ? "Results in" : "Next question in"} /> : "The host will start the next question."}
+          </p>
+        )}
       </div>
       {reveal.me ? (
         <div className="flex flex-col gap-4">

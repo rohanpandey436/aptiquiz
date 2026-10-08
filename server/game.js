@@ -465,6 +465,10 @@ export class GameManager {
   maybeCloseEarly(room) {
     if (!room.q || room.q.closed || room.q.earlyTimer) return;
     if (!this.everyoneAnswered(room)) return;
+    if (room.practice && room.players.size === 1) {
+      this.closeQuestion(room);
+      return;
+    }
     room.q.earlyTimer = setTimeout(() => {
       room.q.earlyTimer = null;
       if (!room.q.closed && this.everyoneAnswered(room)) this.closeQuestion(room);
@@ -651,6 +655,16 @@ export class GameManager {
     if (!room.players.has(player.id)) return { error: "You are not in this room" };
     this.endGame(room);
     return { ok: true };
+  }
+
+  nextPractice(room, player) {
+    if (!room.practice) return { error: "Only a practice session can be moved on by its player" };
+    if (!room.players.has(player.id)) return { error: "You are not in this room" };
+    if (room.status === "question") {
+      if (!room.q.answers.has(player.id)) return { error: "Answer first, or end the practice" };
+      this.closeQuestion(room);
+    }
+    return this.nextQuestion(room);
   }
 
   closeRound(room) {

@@ -88,7 +88,7 @@ export function attachSockets(io, game) {
         setId,
         questionTime: cleanInt(payload?.questionTime, 5, 120, 0),
         examMode: false,
-        autoAdvance: true,
+        autoAdvance: payload?.autoAdvance !== false,
         practice: true,
         difficulty: typeof payload?.difficulty === "string" ? payload.difficulty : "mixed",
       });
@@ -198,6 +198,13 @@ export function attachSockets(io, game) {
       const ref = playerRef();
       if (!ref) return reply(ack, { ok: false, error: "You are not in a room" });
       const result = game.endPractice(ref.room, ref.player);
+      reply(ack, result.error ? { ok: false, error: result.error } : { ok: true });
+    });
+
+    on("player:next", (_payload, ack) => {
+      const ref = playerRef();
+      if (!ref) return reply(ack, { ok: false, error: "You are not in a room" });
+      const result = game.nextPractice(ref.room, ref.player);
       reply(ack, result.error ? { ok: false, error: result.error } : { ok: true });
     });
 

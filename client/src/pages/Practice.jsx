@@ -22,12 +22,18 @@ const PACES = [
 
 const PACE_SECONDS = { relaxed: 40, normal: 20, fast: 10 };
 
+const FLOWS = [
+  ["auto", "By itself after 8 s"],
+  ["manual", "When I press Enter"],
+];
+
 export default function Practice() {
   const navigate = useNavigate();
   const [sets, setSets] = useState(null);
   const [setId, setSetId] = useState("");
   const [level, setLevel] = useState("mixed");
   const [pace, setPace] = useState("normal");
+  const [flow, setFlow] = useState("auto");
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -60,7 +66,7 @@ export default function Practice() {
     const cleanName = name.trim() || "You";
     setError("");
     setBusy(true);
-    const res = await request("practice:start", { setId, difficulty: level, questionTime: PACE_SECONDS[pace], name: cleanName });
+    const res = await request("practice:start", { setId, difficulty: level, questionTime: PACE_SECONDS[pace], autoAdvance: flow === "auto", name: cleanName });
     setBusy(false);
     if (!res.ok) return setError(res.error || "Could not start practice");
     playerSeat.set(res.code, { token: res.token, name: res.name });
@@ -126,6 +132,13 @@ export default function Practice() {
               <span className="text-sm font-bold">Pace</span>
               <Segmented options={PACES} value={pace} onChange={setPace} label="Pace" />
             </div>
+            <div className="flex flex-col gap-2">
+              <span className="text-sm font-bold">Next question</span>
+              <Segmented options={FLOWS} value={flow} onChange={setFlow} label="Next question" />
+              <p className="text-xs text-muted">
+                {flow === "auto" ? "Each answer stays on screen for 8 seconds. Press Enter or tap Next to move on sooner." : "Each answer stays on screen until you press Enter or tap Next."}
+              </p>
+            </div>
             <Field id="practice-name" label="Name" hint="Only you see it; practice games are not counted in the league.">
               <input id="practice-name" className={`${inputClass} max-w-xs`} value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" maxLength={20} />
             </Field>
@@ -137,7 +150,7 @@ export default function Practice() {
             <Button type="submit" size="lg" disabled={!setId || busy}>
               {busy ? "Starting" : "Start practice"}
             </Button>
-            <span className="text-sm text-muted">Questions move on by themselves 8 seconds after each answer is shown.</span>
+            <span className="text-sm text-muted">End the practice at any time from the top bar and still get your report.</span>
           </div>
         </form>
       </div>

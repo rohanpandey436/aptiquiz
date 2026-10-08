@@ -47,7 +47,7 @@ function ThemeToggle() {
   );
 }
 
-export function Shell({ children, wide = false, nav = true, full = false, sticky = true }) {
+export function Shell({ children, wide = false, nav = true, full = false, sticky = true, actions = null }) {
   const connected = useConnection();
   const online = useOnline();
   const [longGone, setLongGone] = useState(false);
@@ -89,6 +89,7 @@ export function Shell({ children, wide = false, nav = true, full = false, sticky
                 </NavLink>
               </nav>
             ) : null}
+            {actions}
             <ThemeToggle />
           </div>
         </div>
