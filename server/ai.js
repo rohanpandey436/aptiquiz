@@ -40,6 +40,7 @@ export function buildPrompt({ topic, count, difficulty }) {
     "Check every calculation before you answer. The numbers must work out exactly.",
     level,
     "Use plain English and short sentences. No trick wording, no images, no tables.",
+    "Set the questions in India: money in rupees written as Rs, Indian names and places.",
     "Reply with JSON only, no prose and no code fences, in exactly this shape:",
     '{"title": "short set name, at most 40 characters", "questions": [{"text": "the question", "options": ["A", "B", "C", "D"], "correct": 0, "topic": "quantitative", "difficulty": "easy", "explanation": "one or two sentences showing how to reach the answer"}]}',
     '"correct" is the index of the right option, 0 to 3. "topic" is one of: quantitative, logical, verbal, data interpretation. "difficulty" is one of: easy, medium, hard.',
