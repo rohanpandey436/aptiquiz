@@ -99,7 +99,7 @@ npm start
 
 Open http://localhost:3000. For development with hot reload, `npm run dev` runs the server on 3000 and Vite on 5173.
 
-Environment variables are optional and documented in `.env.example`. `HOST_PASSCODE` is optional; when set it locks the question editor and every API call that reveals answers, with a per-address limit on wrong attempts. `AI_API_KEY` is optional; when set, the Host and Practice pages gain an "Ask AI" option that writes a question set on a typed topic. The server talks to any OpenAI-style chat API; the defaults (`AI_BASE_URL`, `AI_MODEL`) point at Groq's free tier with Llama 3.3 70B, and Gemini's free tier works by changing those two values.
+Environment variables are optional and documented in `.env.example`. `HOST_PASSCODE` is optional; when set it locks the question editor and every API call that reveals answers, with a per-address limit on wrong attempts. `AI_API_KEY` is optional; when set, the Host and Practice pages gain an "Ask AI" option that writes a question set on a typed topic. The server talks to any OpenAI-style chat API; the defaults (`AI_BASE_URL`, `AI_MODEL`) point at Groq's free tier with GPT-OSS 120B, and Gemini's free tier works by changing those two values.
 
 Test login: none needed. Hosting, joining and the question editor are open on the demo deployment. A college can set `HOST_PASSCODE` to lock the editor ("faculty mode"); hosting a game never needs a passcode. While a set is being played, its answer key is hidden from the editor API even in open mode, so a player cannot read the answers mid-game.
 
@@ -155,7 +155,7 @@ Deployment: `render.yaml` describes a single free web service (build `npm ci && 
 - Client: React 18, Vite 5, Tailwind CSS 4, Framer Motion, react-router, qrcode.react, socket.io-client.
 - Testing: the bot simulation in `scripts/loadtest.js` built on socket.io-client.
 - Hosting: Render (web service with websockets).
-- AI inside the app: optional question writing through an OpenAI-style chat API, Groq's free tier with Llama 3.3 70B by default (no SDK, one HTTP call in JSON mode). A host or a practice player types a topic; the server asks the model for questions in a fixed JSON shape, checks them like any uploaded set, and saves them as a set marked "Written by AI". It runs only when `AI_API_KEY` is set; without it the option does not appear.
+- AI inside the app: optional question writing through an OpenAI-style chat API, Groq's free tier with GPT-OSS 120B by default (no SDK, one HTTP call in JSON mode). A host or a practice player types a topic; the server asks the model for questions in a fixed JSON shape, checks them like any uploaded set, and saves them as a set marked "Written by AI". It runs only when `AI_API_KEY` is set; without it the option does not appear.
 - How users are told: the builder says the questions were written by AI and asks the host to read the answers before playing; the set carries an AI badge on the Host, Practice and Questions pages; the lobby tells players when a game uses AI-written questions. There are no AI players and no AI answers during a game. Every participant is a real person, and the footer of every page says so.
 - AI during development: an AI coding assistant was used for code suggestions, reviews and documentation drafts.
 
