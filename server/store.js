@@ -3,18 +3,15 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { seedSets } from "./seed/questions.js";
+import { validateSet } from "./validate.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = path.resolve(here, "..", process.env.DATA_DIR || "./data");
-const SETS_FILE = path.join(DATA_DIR, "sets.json");
-const GAMES_FILE = path.join(DATA_DIR, "games.json");
 
-export const TOPICS = ["quantitative", "logical", "verbal", "data interpretation"];
-export const DIFFICULTIES = ["easy", "medium", "hard"];
-
-function ensureDir() {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-}
+let dataDir = null;
+let setsFile = null;
+let gamesFile = null;
+let sets = [];
+let games = [];
 
 function readJson(file, fallback) {
   try {
@@ -25,7 +22,7 @@ function readJson(file, fallback) {
 }
 
 function writeJson(file, value) {
-  ensureDir();
+  fs.mkdirSync(dataDir, { recursive: true });
   const tmp = `${file}.${process.pid}.tmp`;
   fs.writeFileSync(tmp, JSON.stringify(value, null, 2));
   fs.renameSync(tmp, file);
@@ -35,18 +32,19 @@ export function newId(prefix = "") {
   return prefix + crypto.randomBytes(6).toString("base64url");
 }
 
-let sets = [];
-let games = [];
-
-export function init() {
-  ensureDir();
-  sets = readJson(SETS_FILE, null);
+export function init(dir = process.env.DATA_DIR || "./data") {
+  dataDir = path.resolve(here, "..", dir);
+  setsFile = path.join(dataDir, "sets.json");
+  gamesFile = path.join(dataDir, "games.json");
+  fs.mkdirSync(dataDir, { recursive: true });
+  sets = readJson(setsFile, null);
   if (!Array.isArray(sets) || sets.length === 0) {
     sets = seedSets();
-    writeJson(SETS_FILE, sets);
+    writeJson(setsFile, sets);
   }
-  games = readJson(GAMES_FILE, []);
+  games = readJson(gamesFile, []);
   if (!Array.isArray(games)) games = [];
+  return dataDir;
 }
 
 function summarize(set) {
@@ -72,88 +70,47 @@ export function getSet(id) {
   return sets.find((s) => s.id === id) || null;
 }
 
-function cleanText(value, max) {
-  if (typeof value !== "string") return "";
-  return value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "").trim().slice(0, max);
-}
-
-export function validateQuestion(raw, index) {
-  const errors = [];
-  const q = {};
-  q.id = cleanText(raw?.id, 40) || newId("q_");
-  q.text = cleanText(raw?.text, 600);
-  if (!q.text) errors.push(`Question ${index + 1}: text is required`);
-  const options = Array.isArray(raw?.options) ? raw.options.map((o) => cleanText(o, 200)) : [];
-  if (options.length < 2 || options.length > 6) errors.push(`Question ${index + 1}: needs 2 to 6 options`);
-  if (options.some((o) => !o)) errors.push(`Question ${index + 1}: every option needs text`);
-  q.options = options;
-  q.correct = Number(raw?.correct);
-  if (!Number.isInteger(q.correct) || q.correct < 0 || q.correct >= options.length) {
-    errors.push(`Question ${index + 1}: correct answer must point to one of the options`);
-  }
-  q.topic = TOPICS.includes(raw?.topic) ? raw.topic : "quantitative";
-  q.difficulty = DIFFICULTIES.includes(raw?.difficulty) ? raw.difficulty : "medium";
-  const image = cleanText(raw?.image, 500);
-  q.image = /^https?:\/\//i.test(image) ? image : null;
-  if (Array.isArray(raw?.table) && raw.table.length) {
-    const rows = raw.table.slice(0, 10).map((r) => (Array.isArray(r) ? r.slice(0, 8).map((c) => cleanText(String(c ?? ""), 60)) : []));
-    q.table = rows.filter((r) => r.length);
-    if (!q.table.length) q.table = null;
-  } else {
-    q.table = null;
-  }
-  q.explanation = cleanText(raw?.explanation, 600) || "";
-  const time = Number(raw?.time);
-  q.time = Number.isInteger(time) && time >= 5 && time <= 120 ? time : null;
-  return { q, errors };
+export function withoutAnswers(set) {
+  return {
+    ...set,
+    locked: true,
+    questions: set.questions.map(({ correct, explanation, ...rest }) => rest),
+  };
 }
 
 export function saveSet(raw) {
-  const errors = [];
-  const title = cleanText(raw?.title, 80);
-  if (!title) errors.push("Title is required");
-  const questions = Array.isArray(raw?.questions) ? raw.questions : [];
-  if (!questions.length) errors.push("Add at least one question");
-  if (questions.length > 200) errors.push("A set can hold up to 200 questions");
-  const cleaned = [];
-  questions.forEach((rq, i) => {
-    const { q, errors: qe } = validateQuestion(rq, i);
-    errors.push(...qe);
-    cleaned.push(q);
-  });
+  const { errors, set: cleaned } = validateSet(raw, newId);
   if (errors.length) return { ok: false, errors };
-  const questionTime = Number(raw?.questionTime);
-  const existing = raw?.id ? getSet(raw.id) : null;
+  const existing = cleaned.id ? getSet(cleaned.id) : null;
+  const now = new Date().toISOString();
   const set = {
+    ...cleaned,
     id: existing ? existing.id : newId("set_"),
-    title,
-    description: cleanText(raw?.description, 200),
-    questionTime: Number.isInteger(questionTime) && questionTime >= 5 && questionTime <= 120 ? questionTime : 20,
-    seed: existing ? !!existing.seed && !raw?.unseed : false,
-    createdAt: existing ? existing.createdAt : new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    questions: cleaned,
+    seed: existing ? !!existing.seed : false,
+    createdAt: existing ? existing.createdAt : now,
+    updatedAt: now,
   };
   if (existing) sets = sets.map((s) => (s.id === set.id ? set : s));
   else sets.push(set);
-  writeJson(SETS_FILE, sets);
+  writeJson(setsFile, sets);
   return { ok: true, set };
 }
 
 export function duplicateSet(id) {
   const src = getSet(id);
   if (!src) return null;
+  const now = new Date().toISOString();
   const copy = {
     ...src,
     id: newId("set_"),
     title: `${src.title} (copy)`.slice(0, 80),
     seed: false,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    createdAt: now,
+    updatedAt: now,
     questions: src.questions.map((q) => ({ ...q, id: newId("q_") })),
   };
   sets.push(copy);
-  writeJson(SETS_FILE, sets);
+  writeJson(setsFile, sets);
   return copy;
 }
 
@@ -161,14 +118,14 @@ export function deleteSet(id) {
   const before = sets.length;
   sets = sets.filter((s) => s.id !== id);
   if (sets.length === before) return false;
-  writeJson(SETS_FILE, sets);
+  writeJson(setsFile, sets);
   return true;
 }
 
 export function addGame(summary) {
   games.push(summary);
   if (games.length > 5000) games = games.slice(-5000);
-  writeJson(GAMES_FILE, games);
+  writeJson(gamesFile, games);
 }
 
 export function league(periodDays) {

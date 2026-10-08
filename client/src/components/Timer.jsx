@@ -16,19 +16,17 @@ export function Timer({ endsAt, durationMs, label = "Time left", size = "md" }) 
   const frac = durationMs > 0 ? Math.min(1, remaining / durationMs) : 0;
   const urgent = remaining > 0 && remaining <= 5000;
   const secondsLeft = Math.ceil(remaining / 1000);
-  const textSize = size === "lg" ? "text-4xl" : "text-xl";
+  const digits = size === "lg" ? "text-5xl" : "text-2xl";
+  const track = size === "lg" ? "h-4" : "h-3";
 
   return (
     <div role="timer" aria-label={`${secondsLeft} seconds left`}>
       <div className="mb-1.5 flex items-baseline justify-between">
-        <span className="text-sm font-semibold text-muted">{label}</span>
-        <span className={`${textSize} font-extrabold tabular ${urgent ? "text-bad" : "text-ink"}`}>{secondsLeft}s</span>
+        <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted">{label}</span>
+        <span className={`inline-block font-extrabold tabular ${digits} ${urgent ? "animate-pulse-soft text-bad" : "text-ink"}`}>{secondsLeft}s</span>
       </div>
-      <div className="h-3 w-full overflow-hidden rounded-full bg-line" aria-hidden="true">
-        <div
-          className={`h-full rounded-full ${urgent ? "bg-bad" : "bg-brand-600"}`}
-          style={{ width: `${frac * 100}%`, transition: "width 100ms linear" }}
-        />
+      <div className={`${track} w-full overflow-hidden rounded-full bg-line`} aria-hidden="true">
+        <div className={`h-full rounded-full ${urgent ? "bg-bad" : "bg-brand-gradient"}`} style={{ width: `${frac * 100}%`, transition: "width 100ms linear" }} />
       </div>
     </div>
   );

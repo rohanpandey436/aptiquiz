@@ -6,11 +6,15 @@ const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 export const RTT_CAP_MS = 400;
 const GRACE_MS = 60;
 const ALL_ANSWERED_DELAY_MS = 900;
+export const REVEAL_DELAY_MS = 8000;
 export const BASE_POINTS = 500;
 export const BONUS_POINTS = 500;
 export const EXAM_PENALTY = 250;
-const MAX_PLAYERS = 60;
+export const MAX_PLAYERS = 60;
+export const MAX_ROOMS = 300;
 const ROOM_TTL_MS = 3 * 60 * 60 * 1000;
+const ENDED_TTL_MS = 60 * 60 * 1000;
+const LOBBY_TTL_MS = 20 * 60 * 1000;
 
 function token(bytes = 18) {
   return crypto.randomBytes(bytes).toString("base64url");
@@ -40,12 +44,7 @@ export class GameManager {
 
   shutdown() {
     clearInterval(this.sweepTimer);
-    for (const room of this.rooms.values()) {
-      if (room.q) {
-        clearTimeout(room.q.closeTimer);
-        clearTimeout(room.q.earlyTimer);
-      }
-    }
+    for (const room of this.rooms.values()) this.clearRoomTimers(room);
     this.rooms.clear();
     this.bySocket.clear();
   }
@@ -63,7 +62,8 @@ export class GameManager {
     throw new Error("Could not allocate a room code");
   }
 
-  createRoom({ college, setId, questionTime, examMode }) {
+  createRoom({ college, setId, questionTime, examMode, autoAdvance = true, practice = false }) {
+    if (this.rooms.size >= MAX_ROOMS) return { error: "The server is busy right now. Try again in a few minutes." };
     const set = store.getSet(setId);
     if (!set) return { error: "That question set no longer exists" };
     const code = this.genCode();
@@ -76,11 +76,14 @@ export class GameManager {
       settings: {
         questionTime: questionTime || set.questionTime || 20,
         examMode: !!examMode,
+        autoAdvance: !!autoAdvance,
       },
+      practice: !!practice,
       status: "lobby",
       hostToken: token(),
       hostSocketId: null,
       players: new Map(),
+      banned: { names: new Set(), addresses: new Set() },
       qIndex: -1,
       q: null,
       rounds: [],
@@ -94,8 +97,33 @@ export class GameManager {
     return { room };
   }
 
+  updateRoom(room, { setId, questionTime, examMode, college, autoAdvance }) {
+    if (room.status !== "lobby") return { error: "Settings can only change before the game starts" };
+    if (setId && setId !== room.setId) {
+      const set = store.getSet(setId);
+      if (!set) return { error: "That question set no longer exists" };
+      room.setId = set.id;
+      room.setTitle = set.title;
+      room.questions = set.questions.map((q) => ({ ...q }));
+      if (!questionTime) room.settings.questionTime = set.questionTime || 20;
+    }
+    if (questionTime) room.settings.questionTime = questionTime;
+    if (typeof examMode === "boolean") room.settings.examMode = examMode;
+    if (typeof autoAdvance === "boolean") room.settings.autoAdvance = autoAdvance;
+    if (college) room.college = college;
+    room.lastActivity = Date.now();
+    this.broadcastLobby(room);
+    return { ok: true };
+  }
+
   getRoom(code) {
     return this.rooms.get(String(code || "").toUpperCase()) || null;
+  }
+
+  setsInPlay() {
+    const ids = new Set();
+    for (const room of this.rooms.values()) if (room.status !== "ended") ids.add(room.setId);
+    return ids;
   }
 
   publicRoomInfo(room) {
@@ -104,7 +132,6 @@ export class GameManager {
       college: room.college,
       status: room.status,
       players: room.players.size,
-      setTitle: room.setTitle,
       questionCount: room.questions.length,
     };
   }
@@ -114,9 +141,11 @@ export class GameManager {
       code: room.code,
       college: room.college,
       status: room.status,
+      setId: room.setId,
       setTitle: room.setTitle,
       questionCount: room.questions.length,
       settings: room.settings,
+      practice: room.practice,
       scoring: this.scoringRule(room),
       players: [...room.players.values()].map((p) => ({ id: p.id, name: p.name, connected: p.connected, score: p.score })),
     };
@@ -134,7 +163,17 @@ export class GameManager {
     };
   }
 
+  detach(socket) {
+    const ref = this.bySocket.get(socket.id);
+    if (!ref) return null;
+    this.handleDisconnect(socket.id);
+    socket.leave(ref.code);
+    socket.leave(`${ref.code}:watch`);
+    return ref;
+  }
+
   attachHost(room, socket) {
+    this.detach(socket);
     room.hostSocketId = socket.id;
     this.bySocket.set(socket.id, { code: room.code, role: "host" });
     socket.join(room.code);
@@ -142,14 +181,15 @@ export class GameManager {
   }
 
   attachSpectator(room, socket) {
+    this.detach(socket);
     this.bySocket.set(socket.id, { code: room.code, role: "spectator" });
     socket.join(room.code);
     socket.join(`${room.code}:watch`);
   }
 
-  emitToScreens(room, event, payload) {
-    if (room.hostSocketId) this.io.to(room.hostSocketId).emit(event, payload);
-    this.io.to(`${room.code}:watch`).emit(event, payload);
+  emitToScreens(room, event, hostPayload, spectatorPayload = hostPayload) {
+    if (room.hostSocketId) this.io.to(room.hostSocketId).emit(event, hostPayload);
+    this.io.to(`${room.code}:watch`).emit(event, spectatorPayload);
   }
 
   uniqueName(room, name) {
@@ -162,13 +202,23 @@ export class GameManager {
     return `${name.slice(0, 14)} ${crypto.randomInt(1000)}`;
   }
 
-  joinPlayer(room, socket, name) {
+  joinPlayer(room, socket, name, address = "") {
     if (room.status === "ended") return { error: "This game has already ended" };
+    if (room.banned.names.has(name.toLowerCase()) || (address && room.banned.addresses.has(address))) {
+      return { error: "The host has removed you from this room" };
+    }
+    const existing = this.bySocket.get(socket.id);
+    if (existing?.role === "player" && existing.code === room.code) {
+      const current = room.players.get(existing.playerId);
+      if (current) return { error: `This device is already in the room as ${current.name}. Refresh the page to continue.` };
+    }
     if (room.players.size >= MAX_PLAYERS) return { error: "This room is full" };
+    this.detach(socket);
     const player = {
       id: token(6),
       token: token(),
       name: this.uniqueName(room, name),
+      address,
       score: 0,
       socketId: socket.id,
       connected: true,
@@ -186,6 +236,7 @@ export class GameManager {
     this.bySocket.set(socket.id, { code: room.code, role: "player", playerId: player.id });
     socket.join(room.code);
     room.lastActivity = Date.now();
+    this.cancelEarlyCloseFor(room, player);
     this.broadcastLobby(room);
     return { player };
   }
@@ -201,19 +252,23 @@ export class GameManager {
         old.leave(room.code);
       }
     }
+    this.detach(socket);
     player.socketId = socket.id;
     player.connected = true;
     this.bySocket.set(socket.id, { code: room.code, role: "player", playerId: player.id });
     socket.join(room.code);
     room.lastActivity = Date.now();
+    this.cancelEarlyCloseFor(room, player);
     this.broadcastLobby(room);
     return { player };
   }
 
-  resumeHost(room, socket, hostToken) {
-    if (room.hostToken !== hostToken) return { error: "Host key does not match this room" };
-    this.attachHost(room, socket);
-    return { ok: true };
+  cancelEarlyCloseFor(room, player) {
+    if (room.status !== "question" || !room.q || room.q.closed || !room.q.earlyTimer) return;
+    if (!room.q.answers.has(player.id)) {
+      clearTimeout(room.q.earlyTimer);
+      room.q.earlyTimer = null;
+    }
   }
 
   handleDisconnect(socketId) {
@@ -226,7 +281,7 @@ export class GameManager {
       if (room.hostSocketId === socketId) room.hostSocketId = null;
       return;
     }
-    if (ref.role === "spectator") return;
+    if (ref.role !== "player") return;
     const player = room.players.get(ref.playerId);
     if (!player || player.socketId !== socketId) return;
     player.connected = false;
@@ -271,6 +326,7 @@ export class GameManager {
   startQuestion(room, idx) {
     const question = room.questions[idx];
     if (!question) return this.endGame(room);
+    this.clearRoomTimers(room);
     room.qIndex = idx;
     room.status = "question";
     const durationMs = (question.time || room.settings.questionTime) * 1000;
@@ -283,6 +339,8 @@ export class GameManager {
       closed: false,
       closeTimer: setTimeout(() => this.closeQuestion(room), durationMs + RTT_CAP_MS + GRACE_MS),
       earlyTimer: null,
+      advanceTimer: null,
+      advanceAt: null,
     };
     room.lastActivity = Date.now();
     for (const player of room.players.values()) {
@@ -378,20 +436,26 @@ export class GameManager {
     return { accepted: true, elapsedMs: Math.round(elapsed) };
   }
 
+  everyoneAnswered(room) {
+    const connected = [...room.players.values()].filter((p) => p.connected);
+    return connected.length > 0 && connected.every((p) => room.q.answers.has(p.id));
+  }
+
   maybeCloseEarly(room) {
     if (!room.q || room.q.closed || room.q.earlyTimer) return;
-    const connected = [...room.players.values()].filter((p) => p.connected);
-    if (connected.length === 0) return;
-    const everyone = connected.every((p) => room.q.answers.has(p.id));
-    if (everyone) room.q.earlyTimer = setTimeout(() => this.closeQuestion(room), ALL_ANSWERED_DELAY_MS);
+    if (!this.everyoneAnswered(room)) return;
+    room.q.earlyTimer = setTimeout(() => {
+      room.q.earlyTimer = null;
+      if (!room.q.closed && this.everyoneAnswered(room)) this.closeQuestion(room);
+    }, ALL_ANSWERED_DELAY_MS);
   }
 
   computeRanks(room) {
     const list = [...room.players.values()];
     list.sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
-      const ta = a.answers.reduce((s, x) => s + (x.elapsed ?? 0), 0);
-      const tb = b.answers.reduce((s, x) => s + (x.elapsed ?? 0), 0);
+      const ta = a.answers.reduce((s, x) => s + x.elapsed, 0);
+      const tb = b.answers.reduce((s, x) => s + x.elapsed, 0);
       if (ta !== tb) return ta - tb;
       return a.name.localeCompare(b.name);
     });
@@ -415,11 +479,20 @@ export class GameManager {
     }));
   }
 
+  clearRoomTimers(room) {
+    if (!room.q) return;
+    clearTimeout(room.q.closeTimer);
+    clearTimeout(room.q.earlyTimer);
+    clearTimeout(room.q.advanceTimer);
+    room.q.earlyTimer = null;
+    room.q.advanceTimer = null;
+    room.q.advanceAt = null;
+  }
+
   closeQuestion(room) {
     if (!room.q || room.q.closed) return;
     room.q.closed = true;
-    clearTimeout(room.q.closeTimer);
-    clearTimeout(room.q.earlyTimer);
+    this.clearRoomTimers(room);
     const question = room.questions[room.qIndex];
     for (const player of room.players.values()) {
       const a = room.q.answers.get(player.id);
@@ -432,7 +505,7 @@ export class GameManager {
         difficulty: question.difficulty,
         answered: !!a,
         correct: a ? a.correct : false,
-        elapsed: a ? a.elapsed : null,
+        elapsed: a ? a.elapsed : room.q.durationMs,
         timeLeftFrac: a ? a.timeLeftFrac : 0,
         points: a ? a.points : 0,
       });
@@ -453,12 +526,44 @@ export class GameManager {
       correct: question.correct,
       answered,
       correctCount,
+      players: room.players.size,
       avgElapsedMs: answered ? Math.round(elapsedSum / answered) : null,
       pctCorrect: room.players.size ? Math.round((100 * correctCount) / room.players.size) : 0,
     });
     room.status = "reveal";
     room.lastActivity = Date.now();
+    if (room.settings.autoAdvance) this.scheduleAdvance(room);
     this.emitReveal(room);
+  }
+
+  scheduleAdvance(room, delayMs = REVEAL_DELAY_MS) {
+    if (!room.q) return;
+    clearTimeout(room.q.advanceTimer);
+    room.q.advanceAt = Date.now() + delayMs;
+    room.q.advanceTimer = setTimeout(() => {
+      room.q.advanceTimer = null;
+      room.q.advanceAt = null;
+      if (room.status === "reveal") this.nextQuestion(room);
+    }, delayMs);
+  }
+
+  autoNextMs(room) {
+    if (!room.q?.advanceAt) return null;
+    return Math.max(0, room.q.advanceAt - Date.now());
+  }
+
+  setAutoAdvance(room, enabled) {
+    room.settings.autoAdvance = !!enabled;
+    if (room.status === "reveal" && room.q) {
+      if (enabled) this.scheduleAdvance(room);
+      else {
+        clearTimeout(room.q.advanceTimer);
+        room.q.advanceTimer = null;
+        room.q.advanceAt = null;
+      }
+    }
+    this.io.to(room.code).emit("room:auto", { autoAdvance: room.settings.autoAdvance, autoNextMs: this.autoNextMs(room) });
+    return { ok: true };
   }
 
   revealBase(room) {
@@ -475,6 +580,8 @@ export class GameManager {
       correctCount: round.correctCount,
       playerCount: room.players.size,
       avgElapsedMs: round.avgElapsedMs,
+      autoAdvance: room.settings.autoAdvance,
+      autoNextMs: this.autoNextMs(room),
     };
   }
 
@@ -517,12 +624,15 @@ export class GameManager {
     this.emitToScreens(room, "question:reveal", this.hostRevealPayload(room));
   }
 
+  closeRound(room) {
+    if (room.status !== "question") return { error: "No round is open" };
+    this.closeQuestion(room);
+    return { ok: true };
+  }
+
   nextQuestion(room) {
-    if (room.status === "question") {
-      this.closeQuestion(room);
-      return { ok: true, closed: true };
-    }
-    if (room.status !== "reveal") return { error: "Nothing to advance" };
+    if (room.status !== "reveal") return { error: "Wait for the round to finish before moving on" };
+    room.lastActivity = Date.now();
     if (room.qIndex + 1 >= room.questions.length) {
       this.endGame(room);
     } else {
@@ -536,7 +646,7 @@ export class GameManager {
     const answers = player.answers;
     const correct = answers.filter((a) => a.correct);
     const wrong = answers.filter((a) => a.answered && !a.correct);
-    const skipped = answers.filter((a) => !a.answered);
+    const skippedCount = answers.filter((a) => !a.answered).length + Math.max(0, n - answers.length);
     const topics = {};
     for (const a of answers) {
       const t = topics[a.topic] || { correct: 0, total: 0, elapsedSum: 0, answered: 0 };
@@ -558,7 +668,7 @@ export class GameManager {
     const maxPerQ = BASE_POINTS + BONUS_POINTS;
     const speedCost = correct.reduce((s, a) => s + (maxPerQ - a.points), 0);
     const errorCost = wrong.reduce((s, a) => s + maxPerQ - a.points, 0);
-    const missedCost = skipped.length * maxPerQ;
+    const missedCost = skippedCount * maxPerQ;
     const late = answers.filter((a) => a.answered && a.timeLeftFrac < 0.25);
     const early = answers.filter((a) => a.answered && a.timeLeftFrac >= 0.25);
     const afterMistake = answers.filter((a, i) => i > 0 && answers[i - 1].answered && !answers[i - 1].correct && a.answered);
@@ -567,6 +677,7 @@ export class GameManager {
     const avgSpeedS = answeredList.length ? round1(answeredList.reduce((s, a) => s + a.elapsed, 0) / answeredList.length / 1000) : null;
     const fastestCorrectS = correct.length ? round1(Math.min(...correct.map((a) => a.elapsed)) / 1000) : null;
     return {
+      id: player.id,
       name: player.name,
       score: player.score,
       rank: player.rank,
@@ -574,7 +685,7 @@ export class GameManager {
       questions: n,
       correct: correct.length,
       wrong: wrong.length,
-      skipped: skipped.length,
+      skipped: skippedCount,
       accuracy: n ? Math.round((100 * correct.length) / n) : 0,
       avgSpeedS,
       fastestCorrectS,
@@ -596,7 +707,7 @@ export class GameManager {
     };
   }
 
-  hostInsights(room) {
+  roomInsights(room) {
     const questions = room.rounds.map((r) => {
       const q = room.questions[r.qIndex];
       return {
@@ -614,22 +725,32 @@ export class GameManager {
       };
     });
     const topics = {};
-    for (const q of questions) {
+    for (const r of room.rounds) {
+      const q = room.questions[r.qIndex];
       const t = topics[q.topic] || { correct: 0, total: 0 };
-      t.total += room.players.size;
-      t.correct += q.correctCount;
+      t.total += r.players;
+      t.correct += r.correctCount;
       topics[q.topic] = t;
     }
-    const players = [...room.players.values()].map((p) => this.playerReport(room, p)).sort((a, b) => a.rank - b.rank);
-    const rtts = [...room.players.values()].map((p) => p.rtt).filter((x) => x > 0);
     return {
       code: room.code,
       college: room.college,
       setTitle: room.setTitle,
       settings: room.settings,
+      practice: room.practice,
       questions,
       hardest: [...questions].sort((a, b) => a.pctCorrect - b.pctCorrect).slice(0, 3),
       topics: Object.entries(topics).map(([topic, t]) => ({ topic, accuracy: t.total ? Math.round((100 * t.correct) / t.total) : 0 })),
+      startedAt: room.startedAt,
+      endedAt: room.endedAt,
+    };
+  }
+
+  hostInsights(room) {
+    const players = [...room.players.values()].map((p) => this.playerReport(room, p)).sort((a, b) => a.rank - b.rank);
+    const rtts = [...room.players.values()].map((p) => p.rtt).filter((x) => x > 0);
+    return {
+      ...this.roomInsights(room),
       players,
       fairness: {
         rttCapMs: RTT_CAP_MS,
@@ -637,36 +758,37 @@ export class GameManager {
         maxRttMs: rtts.length ? Math.round(Math.max(...rtts)) : 0,
         ...room.stats,
       },
-      startedAt: room.startedAt,
-      endedAt: room.endedAt,
     };
   }
 
   endGame(room) {
     if (room.status === "ended") return;
     if (room.status === "question") this.closeQuestion(room);
+    this.clearRoomTimers(room);
     room.status = "ended";
     room.endedAt = Date.now();
     room.lastActivity = Date.now();
     this.computeRanks(room);
     const insights = this.hostInsights(room);
-    try {
-      store.addGame({
-        code: room.code,
-        college: room.college,
-        setTitle: room.setTitle,
-        examMode: room.settings.examMode,
-        endedAt: new Date(room.endedAt).toISOString(),
-        questions: room.questions.length,
-        players: insights.players.map((p) => ({ name: p.name, score: p.score, correct: p.correct, questions: p.questions, avgSpeedS: p.avgSpeedS })),
-      });
-    } catch (err) {
-      console.error("Could not persist game", err);
+    if (room.rounds.length > 0 && !room.practice) {
+      try {
+        store.addGame({
+          code: room.code,
+          college: room.college,
+          setTitle: room.setTitle,
+          examMode: room.settings.examMode,
+          endedAt: new Date(room.endedAt).toISOString(),
+          questions: room.rounds.length,
+          players: insights.players.map((p) => ({ name: p.name, score: p.score, correct: p.correct, questions: p.questions, avgSpeedS: p.avgSpeedS })),
+        });
+      } catch (err) {
+        console.error("Could not persist game", err);
+      }
     }
     for (const player of room.players.values()) {
       if (player.connected && player.socketId) this.io.to(player.socketId).emit("game:end", this.playerEndPayload(room, player));
     }
-    this.emitToScreens(room, "game:end", this.hostEndPayload(room, insights));
+    this.emitToScreens(room, "game:end", this.hostEndPayload(room, insights), this.spectatorEndPayload(room));
   }
 
   playerEndPayload(room, player) {
@@ -675,6 +797,10 @@ export class GameManager {
 
   hostEndPayload(room, insights) {
     return { leaderboard: this.leaderboard(room), insights: insights || this.hostInsights(room), scoring: this.scoringRule(room) };
+  }
+
+  spectatorEndPayload(room) {
+    return { leaderboard: this.leaderboard(room), insights: this.roomInsights(room), scoring: this.scoringRule(room) };
   }
 
   statePayloadForPlayer(room, player) {
@@ -692,24 +818,35 @@ export class GameManager {
     }
   }
 
-  statePayloadForHost(room) {
+  statePayloadForScreen(room, { spectator = false } = {}) {
+    const lobby = this.lobbyPayload(room);
     switch (room.status) {
       case "lobby":
-        return { status: "lobby", lobby: this.lobbyPayload(room) };
+        return { status: "lobby", lobby };
       case "question":
-        return { status: "question", lobby: this.lobbyPayload(room), question: this.hostQuestionPayload(room) };
+        return { status: "question", lobby, question: this.hostQuestionPayload(room) };
       case "reveal":
-        return { status: "reveal", lobby: this.lobbyPayload(room), reveal: this.hostRevealPayload(room) };
+        return { status: "reveal", lobby, reveal: this.hostRevealPayload(room) };
       case "ended":
-        return { status: "ended", lobby: this.lobbyPayload(room), end: this.hostEndPayload(room) };
+        return { status: "ended", lobby, end: spectator ? this.spectatorEndPayload(room) : this.hostEndPayload(room) };
       default:
         return { status: room.status };
     }
   }
 
+  statePayloadForHost(room) {
+    return this.statePayloadForScreen(room);
+  }
+
+  statePayloadForSpectator(room) {
+    return this.statePayloadForScreen(room, { spectator: true });
+  }
+
   kickPlayer(room, playerId) {
     const player = room.players.get(playerId);
     if (!player) return false;
+    room.banned.names.add(player.name.toLowerCase());
+    if (player.address) room.banned.addresses.add(player.address);
     if (player.socketId) {
       this.io.to(player.socketId).emit("player:kicked");
       this.bySocket.delete(player.socketId);
@@ -717,22 +854,28 @@ export class GameManager {
       if (s) s.leave(room.code);
     }
     room.players.delete(playerId);
+    if (room.q && !room.q.closed) room.q.answers.delete(playerId);
     this.broadcastLobby(room);
+    if (room.status === "question") this.maybeCloseEarly(room);
     return true;
+  }
+
+  closeRoom(code) {
+    const room = this.rooms.get(code);
+    if (!room) return;
+    this.clearRoomTimers(room);
+    this.io.to(code).emit("room:closed");
+    for (const [socketId, ref] of this.bySocket) if (ref.code === code) this.bySocket.delete(socketId);
+    this.rooms.delete(code);
   }
 
   sweep() {
     const now = Date.now();
     for (const [code, room] of this.rooms) {
       const idle = now - room.lastActivity;
-      if ((room.status === "ended" && idle > 60 * 60 * 1000) || idle > ROOM_TTL_MS) {
-        if (room.q) {
-          clearTimeout(room.q.closeTimer);
-          clearTimeout(room.q.earlyTimer);
-        }
-        this.io.to(code).emit("room:closed");
-        this.rooms.delete(code);
-      }
+      const expired =
+        (room.status === "ended" && idle > ENDED_TTL_MS) || (room.status === "lobby" && idle > LOBBY_TTL_MS) || idle > ROOM_TTL_MS;
+      if (expired) this.closeRoom(code);
     }
   }
 }

@@ -4,6 +4,7 @@ import { Badge, Banner, Button, Card, Field, Spinner, inputClass } from "../comp
 import { api } from "../lib/api.js";
 import { hostKey } from "../lib/storage.js";
 import { LETTERS, topicLabel } from "../lib/format.js";
+import { QUICK_EXAMPLE, parseQuickQuestions } from "../lib/quickParse.js";
 
 const TOPICS = ["quantitative", "logical", "verbal", "data interpretation"];
 const DIFFICULTIES = ["easy", "medium", "hard"];
@@ -13,7 +14,7 @@ function blankQuestion() {
 }
 
 function toEditable(q) {
-  return { ...q, image: q.image || "", tableText: q.table ? q.table.map((r) => r.join(" | ")).join("\n") : "" };
+  return { ...q, correct: typeof q.correct === "number" ? q.correct : 0, explanation: q.explanation || "", image: q.image || "", tableText: q.table ? q.table.map((r) => r.join(" | ")).join("\n") : "" };
 }
 
 function fromEditable(q) {
@@ -23,6 +24,7 @@ function fromEditable(q) {
 }
 
 export default function Sets() {
+  const [locked, setLocked] = useState(null);
   const [unlocked, setUnlocked] = useState(!!hostKey.get());
   const [passcode, setPasscode] = useState("");
   const [sets, setSets] = useState(null);
@@ -33,16 +35,30 @@ export default function Sets() {
   const load = () => api.get("/sets").then(setSets).catch((err) => setMessage({ tone: "bad", text: err.message }));
 
   useEffect(() => {
+    api
+      .get("/config")
+      .then((c) => {
+        setLocked(!!c.editorLocked);
+        if (!c.editorLocked) setUnlocked(true);
+      })
+      .catch(() => setLocked(false));
+  }, []);
+
+  useEffect(() => {
     if (unlocked) load();
   }, [unlocked]);
 
   const unlock = async (e) => {
     e.preventDefault();
-    const res = await api.post("/host/verify", { passcode });
-    if (!res.ok) return setMessage({ tone: "bad", text: "That passcode is not right." });
-    hostKey.set(passcode);
-    setMessage(null);
-    setUnlocked(true);
+    try {
+      const res = await api.post("/host/verify", { passcode });
+      if (!res.ok) return setMessage({ tone: "bad", text: "That passcode is not right." });
+      hostKey.set(passcode);
+      setMessage(null);
+      setUnlocked(true);
+    } catch (err) {
+      setMessage({ tone: "bad", text: err.message });
+    }
   };
 
   const openEditor = async (id) => {
@@ -52,6 +68,7 @@ export default function Sets() {
       const set = await api.get(`/sets/${id}`);
       setEditing({ ...set, questions: set.questions.map(toEditable) });
     } catch (err) {
+      if (err.status === 401) setUnlocked(false);
       setMessage({ tone: "bad", text: err.message });
     }
   };
@@ -96,12 +113,21 @@ export default function Sets() {
     setBusy(false);
   };
 
+  if (locked === null) {
+    return (
+      <Shell>
+        <Spinner label="Opening the editor" />
+      </Shell>
+    );
+  }
+
   if (!unlocked) {
     return (
       <Shell>
         <Card as="form" onSubmit={unlock} className="mx-auto max-w-md">
-          <h1 className="text-2xl font-extrabold">Question editor</h1>
-          <p className="mt-1 text-sm text-muted">Faculty and hosts can create, edit and reuse question sets. Enter the host passcode to continue.</p>
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-brand-800">Faculty</p>
+          <h1 className="display mt-2 text-3xl font-extrabold">Question editor</h1>
+          <p className="mt-1 text-sm text-muted">This college has locked the editor. Enter the host passcode to create, edit and reuse question sets.</p>
           <div className="mt-5 flex flex-col gap-4">
             <Field id="passcode" label="Host passcode">
               <input id="passcode" type="password" className={inputClass} value={passcode} onChange={(e) => setPasscode(e.target.value)} autoComplete="current-password" />
@@ -128,10 +154,13 @@ export default function Sets() {
     <Shell>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-extrabold">Question sets</h1>
-          <p className="mt-1 text-muted">Build a set once, host it as many times as you like.</p>
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-brand-800">Questions</p>
+          <h1 className="display mt-2 text-4xl font-extrabold">Question sets</h1>
+          <p className="mt-2 text-muted">Build a set once, host it as many times as you like. Every built-in set can be duplicated and edited.</p>
         </div>
-        <Button onClick={() => openEditor(null)}>New set</Button>
+        <Button size="lg" onClick={() => openEditor(null)}>
+          New set
+        </Button>
       </div>
       {message ? (
         <Banner tone={message.tone} className="mt-4">
@@ -145,20 +174,23 @@ export default function Sets() {
       ) : (
         <ul className="mt-6 grid gap-4 md:grid-cols-2">
           {sets.map((s) => (
-            <Card as="li" key={s.id}>
+            <Card as="li" key={s.id} className="flex flex-col">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h2 className="font-bold">{s.title}</h2>
+                  <h2 className="display text-xl font-bold">{s.title}</h2>
                   <p className="mt-1 text-sm text-muted">{s.description}</p>
                 </div>
-                <Badge tone={s.seed ? "brand" : "neutral"}>{s.seed ? "Built in" : "Custom"}</Badge>
+                <Badge tone={s.seed ? "brand" : "accent"}>{s.seed ? "Built in" : "Custom"}</Badge>
               </div>
-              <p className="mt-3 text-xs text-muted">
-                {s.count} questions / {s.questionTime} s default /{" "}
-                {Object.entries(s.topics)
-                  .map(([t, n]) => `${topicLabel(t)} ${n}`)
-                  .join(", ")}
-              </p>
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                <Badge>{s.count} questions</Badge>
+                <Badge>{s.questionTime} s default</Badge>
+                {Object.entries(s.topics).map(([t, n]) => (
+                  <Badge key={t}>
+                    {topicLabel(t)} {n}
+                  </Badge>
+                ))}
+              </div>
               <div className="mt-4 flex flex-wrap gap-2">
                 <Button size="sm" variant="secondary" onClick={() => openEditor(s.id)} disabled={busy}>
                   Edit
@@ -183,6 +215,7 @@ function Editor({ set, onChange, onSave, onCancel, busy, message }) {
   const [importText, setImportText] = useState("");
   const [importError, setImportError] = useState("");
   const questions = set.questions;
+  const locked = !!set.locked;
 
   const update = (patch) => onChange({ ...set, ...patch });
   const updateQuestion = (i, patch) => update({ questions: questions.map((q, idx) => (idx === i ? { ...q, ...patch } : q)) });
@@ -203,6 +236,14 @@ function Editor({ set, onChange, onSave, onCancel, busy, message }) {
     update({ questions: [...questions, blankQuestion()] });
     setActive(questions.length);
   };
+  const importPlain = () => {
+    setImportError("");
+    const parsed = parseQuickQuestions(importText);
+    if (!parsed.count) return setImportError("Nothing to add yet. Write one question per block.");
+    if (parsed.errors.length) return setImportError(parsed.errors[0]);
+    update({ questions: [...questions.filter((q) => q.text.trim()), ...parsed.questions.map(toEditable)] });
+    setImportText("");
+  };
   const importJson = () => {
     setImportError("");
     try {
@@ -222,74 +263,82 @@ function Editor({ set, onChange, onSave, onCancel, busy, message }) {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-extrabold">{set.id ? "Edit set" : "New set"}</h1>
+        <h1 className="display text-3xl font-extrabold">{set.id ? "Edit set" : "New set"}</h1>
         <div className="flex gap-2">
           <Button variant="secondary" onClick={onCancel} disabled={busy}>
             Cancel
           </Button>
-          <Button onClick={onSave} disabled={busy}>
+          <Button onClick={onSave} disabled={busy || locked}>
             {busy ? "Saving" : "Save set"}
           </Button>
         </div>
       </div>
+      {locked ? <Banner tone="warm">This set is being played right now, so its answer key is hidden and editing is paused until the game ends.</Banner> : null}
       {message ? <Banner tone={message.tone}>{message.text}</Banner> : null}
 
       <Card className="grid gap-4 md:grid-cols-[2fr_2fr_1fr]">
         <Field id="set-title" label="Title">
-          <input id="set-title" className={inputClass} value={set.title} onChange={(e) => update({ title: e.target.value })} maxLength={80} />
+          <input id="set-title" className={inputClass} value={set.title} onChange={(e) => update({ title: e.target.value })} maxLength={80} disabled={locked} />
         </Field>
         <Field id="set-desc" label="Description">
-          <input id="set-desc" className={inputClass} value={set.description || ""} onChange={(e) => update({ description: e.target.value })} maxLength={200} />
+          <input id="set-desc" className={inputClass} value={set.description || ""} onChange={(e) => update({ description: e.target.value })} maxLength={200} disabled={locked} />
         </Field>
         <Field id="set-time" label="Seconds per question">
-          <input id="set-time" type="number" min={5} max={120} className={inputClass} value={set.questionTime} onChange={(e) => update({ questionTime: Number(e.target.value) })} />
+          <input id="set-time" type="number" min={5} max={120} className={inputClass} value={set.questionTime} onChange={(e) => update({ questionTime: Number(e.target.value) })} disabled={locked} />
         </Field>
       </Card>
 
       <div className="grid gap-5 lg:grid-cols-[1fr_2fr]">
         <Card>
           <div className="flex items-center justify-between">
-            <h2 className="font-bold">{questions.length} questions</h2>
-            <Button size="sm" variant="secondary" onClick={addQuestion}>
+            <h2 className="display text-lg font-bold">{questions.length} questions</h2>
+            <Button size="sm" variant="secondary" onClick={addQuestion} disabled={locked}>
               Add
             </Button>
           </div>
           <ol className="mt-3 flex flex-col gap-1">
             {questions.map((item, i) => (
               <li key={i} className={`flex items-center gap-1 rounded-lg ${i === active ? "bg-brand-50" : ""}`}>
-                <button type="button" onClick={() => setActive(i)} className="min-w-0 flex-1 truncate px-2 py-1.5 text-left text-sm font-medium" aria-current={i === active ? "true" : undefined}>
+                <button type="button" onClick={() => setActive(i)} className="min-w-0 flex-1 truncate px-2 py-1.5 text-left text-sm font-semibold" aria-current={i === active ? "true" : undefined}>
                   {i + 1}. {item.text || "Untitled question"}
                 </button>
-                <button type="button" onClick={() => move(i, -1)} className="px-1.5 text-xs text-muted hover:text-ink" aria-label="Move up">
+                <button type="button" onClick={() => move(i, -1)} className="px-1.5 text-xs text-muted hover:text-ink" aria-label="Move up" disabled={locked}>
                   &#9650;
                 </button>
-                <button type="button" onClick={() => move(i, 1)} className="px-1.5 text-xs text-muted hover:text-ink" aria-label="Move down">
+                <button type="button" onClick={() => move(i, 1)} className="px-1.5 text-xs text-muted hover:text-ink" aria-label="Move down" disabled={locked}>
                   &#9660;
                 </button>
-                <button type="button" onClick={() => removeQuestion(i)} className="px-1.5 text-xs text-muted hover:text-bad" aria-label="Delete question">
+                <button type="button" onClick={() => removeQuestion(i)} className="px-1.5 text-xs text-muted hover:text-bad" aria-label="Delete question" disabled={locked}>
                   &#10005;
                 </button>
               </li>
             ))}
           </ol>
-          <details className="mt-4 text-sm">
-            <summary className="cursor-pointer font-semibold text-brand-700">Import JSON</summary>
-            <p className="mt-2 text-xs text-muted">Paste an array of questions with text, options, correct (index), topic, difficulty and optional explanation, image, table.</p>
-            <textarea className={`${inputClass} mt-2 h-32 font-mono text-xs`} value={importText} onChange={(e) => setImportText(e.target.value)} aria-label="JSON to import" />
-            {importError ? <p className="mt-1 text-xs font-semibold text-bad">{importError}</p> : null}
-            <Button size="sm" variant="secondary" className="mt-2" onClick={importJson}>
-              Add imported questions
-            </Button>
-          </details>
+          {!locked ? (
+            <details className="mt-4 text-sm" open>
+              <summary className="cursor-pointer font-bold text-brand-700">Add many at once</summary>
+              <p className="mt-2 text-xs text-muted">Type questions plainly: one per block, options as "A) text", then "Answer: B". Or paste JSON.</p>
+              <textarea className={`${inputClass} mt-2 h-40 font-mono text-xs`} value={importText} onChange={(e) => setImportText(e.target.value)} aria-label="Questions to import" placeholder={QUICK_EXAMPLE} spellCheck={false} />
+              {importError ? <p className="mt-1 text-xs font-bold text-bad">{importError}</p> : null}
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Button size="sm" variant="secondary" onClick={importPlain}>
+                  Add from text
+                </Button>
+                <Button size="sm" variant="ghost" onClick={importJson}>
+                  Add from JSON
+                </Button>
+              </div>
+            </details>
+          ) : null}
         </Card>
 
         {q ? (
           <Card className="flex flex-col gap-4">
             <Field id="q-text" label={`Question ${active + 1}`}>
-              <textarea id="q-text" className={`${inputClass} min-h-24`} value={q.text} onChange={(e) => updateQuestion(active, { text: e.target.value })} maxLength={600} />
+              <textarea id="q-text" className={`${inputClass} min-h-24`} value={q.text} onChange={(e) => updateQuestion(active, { text: e.target.value })} maxLength={600} disabled={locked} />
             </Field>
-            <fieldset>
-              <legend className="text-sm font-semibold">Options, tick the correct one</legend>
+            <fieldset disabled={locked}>
+              <legend className="text-sm font-bold">Options, tick the correct one</legend>
               <div className="mt-2 flex flex-col gap-2">
                 {q.options.map((opt, i) => (
                   <div key={i} className="flex items-center gap-2">
@@ -312,7 +361,7 @@ function Editor({ set, onChange, onSave, onCancel, busy, message }) {
             </fieldset>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field id="q-topic" label="Topic">
-                <select id="q-topic" className={inputClass} value={q.topic} onChange={(e) => updateQuestion(active, { topic: e.target.value })}>
+                <select id="q-topic" className={inputClass} value={q.topic} onChange={(e) => updateQuestion(active, { topic: e.target.value })} disabled={locked}>
                   {TOPICS.map((t) => (
                     <option key={t} value={t}>
                       {topicLabel(t)}
@@ -321,7 +370,7 @@ function Editor({ set, onChange, onSave, onCancel, busy, message }) {
                 </select>
               </Field>
               <Field id="q-diff" label="Difficulty">
-                <select id="q-diff" className={inputClass} value={q.difficulty} onChange={(e) => updateQuestion(active, { difficulty: e.target.value })}>
+                <select id="q-diff" className={inputClass} value={q.difficulty} onChange={(e) => updateQuestion(active, { difficulty: e.target.value })} disabled={locked}>
                   {DIFFICULTIES.map((d) => (
                     <option key={d} value={d}>
                       {d}
@@ -331,14 +380,14 @@ function Editor({ set, onChange, onSave, onCancel, busy, message }) {
               </Field>
             </div>
             <Field id="q-exp" label="Explanation shown after the reveal" hint="Optional, but players learn more from it than from the score.">
-              <textarea id="q-exp" className={`${inputClass} min-h-20`} value={q.explanation || ""} onChange={(e) => updateQuestion(active, { explanation: e.target.value })} maxLength={600} />
+              <textarea id="q-exp" className={`${inputClass} min-h-20`} value={q.explanation || ""} onChange={(e) => updateQuestion(active, { explanation: e.target.value })} maxLength={600} disabled={locked} />
             </Field>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field id="q-img" label="Image URL" hint="Optional. https link to a diagram or chart.">
-                <input id="q-img" className={inputClass} value={q.image} onChange={(e) => updateQuestion(active, { image: e.target.value })} maxLength={500} />
+                <input id="q-img" className={inputClass} value={q.image} onChange={(e) => updateQuestion(active, { image: e.target.value })} maxLength={500} disabled={locked} />
               </Field>
               <Field id="q-table" label="Table" hint="Optional. One row per line, cells separated by |. First line is the header.">
-                <textarea id="q-table" className={`${inputClass} min-h-20 font-mono text-xs`} value={q.tableText} onChange={(e) => updateQuestion(active, { tableText: e.target.value })} />
+                <textarea id="q-table" className={`${inputClass} min-h-20 font-mono text-xs`} value={q.tableText} onChange={(e) => updateQuestion(active, { tableText: e.target.value })} disabled={locked} />
               </Field>
             </div>
           </Card>

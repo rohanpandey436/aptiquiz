@@ -45,7 +45,7 @@ function emitWithAck(socket, event, payload) {
 async function runHost() {
   const host = connect();
   await new Promise((resolve) => host.on("connect", resolve));
-  const created = await emitWithAck(host, "host:create", { setId: SET_ID, college: COLLEGE, questionTime: QUESTION_TIME || undefined });
+  const created = await emitWithAck(host, "host:create", { setId: SET_ID, college: COLLEGE, questionTime: QUESTION_TIME || undefined, practice: true });
   if (!created?.ok) throw new Error(`host:create failed: ${JSON.stringify(created)}`);
   return { host, code: created.code, hostToken: created.hostToken };
 }
@@ -109,7 +109,7 @@ async function spawnPlayer(index, code, behaviour) {
 }
 
 async function main() {
-  console.log(`AptiQuiz load test: ${PLAYERS} players against ${URL} using set ${SET_ID}`);
+  console.log(`AptiQuiz load test: ${PLAYERS} players against ${URL} using set ${SET_ID} (practice room, not counted in the league)`);
   const { host, code, hostToken } = await runHost();
   console.log(`Room ${code} created`);
 

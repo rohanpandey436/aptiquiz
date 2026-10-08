@@ -21,18 +21,17 @@ AptiQuiz turns aptitude practice into a live game. A host creates a room from a 
 ## Done / Left / Plan
 
 **Done**
-- Question authoring: create, edit, reorder, duplicate and delete sets; questions with topic, difficulty, explanation, optional image and table; JSON import. Six built-in sets with 54 verified questions.
-- Rooms with short join codes and a QR code, a live lobby, host start.
-- Live play: server-timed countdown, per-player shuffled options, answer lock-in with the measured answer time, live "answered" counter.
+- Question authoring two ways: a plain-text quick creator on the Host page (type questions as you would on paper, "A) 30", "Answer: B") that saves the set and opens the room in one step, and a full editor with topic, difficulty, explanation, image, table, reorder, duplicate, delete, plain-text and JSON import. Six built-in sets with 54 verified questions.
+- Rooms with short join codes and a QR code, a live lobby, host start. The host can change the set, pace, exam mode and auto-advance in the lobby before starting.
+- Live play: server-timed countdown, per-player shuffled options, answer lock-in with the measured answer time, live "answered" counter. Auto-advance by default: the server starts the next question 8 seconds after each reveal with a countdown on every screen; the host can skip ahead or pause.
 - Scoring that rewards speed, with the rule shown to players; optional exam mode with negative marking.
-- Animated leaderboard with movement arrows after each question; final results with podium, per-player accuracy, speed and topic strengths.
+- Animated leaderboard with movement arrows after each question; on laptops players also see a live standings panel beside the question, on phones a one-line strip that expands. Final results with podium, per-player accuracy, speed and topic strengths.
 - Pressure Profile report card: points lost to speed, errors and skipping; accuracy in the last quarter of the timer versus earlier; accuracy right after a mistake.
 - Host insights: per-question correct rates, hardest questions, topic accuracy, tab-switch flags, fairness panel, CSV export.
 - College league across rooms, by week, month or all time.
-- Server as referee, latency compensation, reconnection with the same score, cheating resistance (details below).
+- Server as referee, latency compensation, reconnection with the same score, cheating resistance (details below). An external review pass found and we fixed: a seat token being lost on a request timeout, a double "next" closing a fresh question, ghost seats when one connection joined twice, an early-close timer surviving a player's return, tie-breaks that favoured skipping, late-joiner maths, and a spectator payload that carried private reports.
 - 50-player simulation script, results below.
-- Projector view at `/watch/CODE`: a read-only second screen that follows the game, so the host laptop can stay private.
-- Optional auto-advance for the host, 8 seconds after each reveal.
+- Projector view at `/watch/CODE`: a read-only second screen that follows the game. It receives standings and question statistics, never players' private reports.
 - Mobile-first layout, keyboard answering (keys 1 to 4), labelled controls, colour plus icon for every status.
 
 **Left**
@@ -59,7 +58,7 @@ Why React, Vite and Tailwind: the host screen and the phone screen share the sam
 
 **Fairness under network delay, in plain words.** A question takes one trip to reach your phone and your tap takes one trip to come back, so your raw time includes a whole round trip of network delay. The server measures each player's round-trip time itself, with a timed probe every few seconds, and subtracts the smallest recent measurement from the answer time, capped at 400 ms. Two players who tap at the same instant on different connections therefore get the same time. Because the server measures, nobody can report a fake delay; because of the cap, deliberately slowing your probe replies buys at most 400 ms, about 10 points on a 20-second question, and it shows in the host's fairness panel.
 
-**Cheating resistance.** Options are shuffled per player per question on the server, so copying a neighbour's letter does not help. The correct answer is never sent before the reveal; the live counter only says how many answered. The first answer is final; duplicates, stale and late answers are dropped and counted. Every socket is rate-limited and payloads are capped at 10 KB. Host actions need the room's host token. Players who hide the tab during a question are flagged to the host. Rejoining needs the secret seat token issued at join time, and a second device with the same token replaces the first. Question sets with answers sit behind a host passcode.
+**Cheating resistance.** Options are shuffled per player per question on the server, so copying a neighbour's letter does not help. The correct answer is never sent before the reveal; the live counter only says how many answered. The first answer is final; duplicates, stale and late answers are dropped and counted. Every socket is rate-limited, payloads are capped at 10 KB, one connection holds one seat, and a kicked player cannot rejoin under the same name or address. Host actions need the room's host token. Players who hide the tab during a question are flagged to the host. Rejoining needs the secret seat token issued at join time, and a second device with the same token replaces the first. The answer key of any set that is currently being played is hidden from the editor API until that game ends, and a college can lock the editor entirely with `HOST_PASSCODE`. Known limit of open mode: a student could read a built-in set's answers before a game starts, which is why hosts who care use their own sets or faculty mode.
 
 **Reconnection.** Each player gets a seat token stored on the phone under the room code. On reload the client resumes with it; the server re-attaches the socket to the same player object and replies with the current state: the open question with the remaining time, the reveal, or the final report. Nobody else notices.
 
@@ -89,9 +88,9 @@ npm start
 
 Open http://localhost:3000. For development with hot reload, `npm run dev` runs the server on 3000 and Vite on 5173.
 
-Environment variables are optional and documented in `.env.example`. `HOST_PASSCODE` protects the question editor and defaults to `faculty`.
+Environment variables are optional and documented in `.env.example`. `HOST_PASSCODE` is optional; when set it locks the question editor and every API call that reveals answers, with a per-address limit on wrong attempts.
 
-Test login: the question editor at `/sets` asks for the host passcode `faculty`. Hosting a game and joining one need no login.
+Test login: none needed. Hosting, joining and the question editor are open on the demo deployment. A college can set `HOST_PASSCODE` to lock the editor ("faculty mode"); hosting a game never needs a passcode. While a set is being played, its answer key is hidden from the editor API even in open mode, so a player cannot read the answers mid-game.
 
 Live instance: https://aptiquiz-1zfx.onrender.com (Render free tier, so the first load after a quiet spell can take up to a minute while the instance wakes).
 

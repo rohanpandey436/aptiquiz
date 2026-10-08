@@ -13,6 +13,7 @@ async function call(method, path, body) {
     data = null;
   }
   if (!res.ok) {
+    if (res.status === 401) hostKey.clear();
     const message = data?.error || (Array.isArray(data?.errors) ? data.errors.join(". ") : `Request failed (${res.status})`);
     const err = new Error(message);
     err.status = res.status;

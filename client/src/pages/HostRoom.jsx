@@ -1,17 +1,21 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { motion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
 import { Shell } from "../components/Layout.jsx";
-import { Badge, Banner, Button, Card, Spinner, Stat } from "../components/ui.jsx";
+import { Badge, Banner, Button, Card, Field, Segmented, Spinner, Stat, inputClass } from "../components/ui.jsx";
 import { Timer } from "../components/Timer.jsx";
 import { OptionTile } from "../components/OptionTile.jsx";
 import { Leaderboard } from "../components/Leaderboard.jsx";
 import { QuestionBody } from "../components/QuestionBody.jsx";
+import { Confetti } from "../components/Confetti.jsx";
+import { Countdown, TIME_CHOICES, Toggle } from "../components/RoomSettings.jsx";
+import { api } from "../lib/api.js";
 import { request, socket, useSocketEvents } from "../lib/socket.js";
 import { hostSeat } from "../lib/storage.js";
 import { downloadCsv, joinUrl, seconds, topicLabel } from "../lib/format.js";
 
-const AUTO_NEXT_SECONDS = 8;
+const withAutoNext = (reveal) => ({ ...reveal, autoNextAt: typeof reveal.autoNextMs === "number" ? Date.now() + reveal.autoNextMs : null });
 
 export default function HostRoom({ spectator = false }) {
   const { code } = useParams();
@@ -25,7 +29,7 @@ export default function HostRoom({ spectator = false }) {
   const [flags, setFlags] = useState({});
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [autoNext, setAutoNext] = useState(false);
+  const inflight = useRef(false);
 
   const applyState = useCallback((state) => {
     if (state.lobby) setLobby(state.lobby);
@@ -33,7 +37,7 @@ export default function HostRoom({ spectator = false }) {
       setQuestion({ ...state.question, endsAt: Date.now() + state.question.remainingMs });
       setProgress({ answeredCount: state.question.answeredCount, playerCount: state.question.playerCount });
     }
-    if (state.status === "reveal") setReveal(state.reveal);
+    if (state.status === "reveal") setReveal(withAutoNext(state.reveal));
     if (state.status === "ended") setEnd(state.end);
     setPhase(state.status);
   }, []);
@@ -56,10 +60,15 @@ export default function HostRoom({ spectator = false }) {
     }
     const res = await request("host:resume", { code, hostToken: seat.hostToken });
     if (!res.ok) {
+      if (res.reason === "timeout") {
+        setError("The server is taking a moment. Retrying.");
+        return;
+      }
       setError(res.error || "Room not found. It may have expired.");
       setPhase("error");
       return;
     }
+    setError("");
     applyState(res.state);
   }, [code, seat, spectator, applyState]);
 
@@ -76,13 +85,15 @@ export default function HostRoom({ spectator = false }) {
         setQuestion({ ...q, endsAt: Date.now() + q.remainingMs });
         setProgress({ answeredCount: q.answeredCount, playerCount: q.playerCount });
         setReveal(null);
+        setError("");
         setPhase("question");
       },
       "question:progress": (p) => setProgress({ answeredCount: p.answeredCount, playerCount: p.playerCount }),
       "question:reveal": (r) => {
-        setReveal(r);
+        setReveal(withAutoNext(r));
         setPhase("reveal");
       },
+      "room:auto": (a) => setReveal((prev) => (prev ? withAutoNext({ ...prev, autoAdvance: a.autoAdvance, autoNextMs: a.autoNextMs }) : prev)),
       "game:end": (e) => {
         setEnd(e);
         setPhase("ended");
@@ -98,11 +109,15 @@ export default function HostRoom({ spectator = false }) {
 
   const act = useCallback(
     async (event, extra = {}) => {
-      if (spectator) return;
+      if (spectator || inflight.current) return { ok: false };
+      inflight.current = true;
       setBusy(true);
+      setError("");
       const res = await request(event, { code, hostToken: seat?.hostToken, ...extra });
+      inflight.current = false;
       setBusy(false);
-      if (!res.ok) setError(res.error || "That did not work");
+      if (!res.ok) setError(res.error || "That did not work. Try again.");
+      return res;
     },
     [code, seat, spectator],
   );
@@ -110,18 +125,13 @@ export default function HostRoom({ spectator = false }) {
   useEffect(() => {
     if (spectator) return undefined;
     const onKey = (e) => {
-      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+      if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
       if (phase === "reveal" && (e.key === "Enter" || e.key === "ArrowRight")) act("host:next");
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [phase, act, spectator]);
-
-  useEffect(() => {
-    if (spectator || !autoNext || phase !== "reveal") return undefined;
-    const id = setTimeout(() => act("host:next"), AUTO_NEXT_SECONDS * 1000);
-    return () => clearTimeout(id);
-  }, [autoNext, phase, reveal, act, spectator]);
 
   const endGame = () => {
     if (window.confirm("End the game now and show results?")) act("host:end");
@@ -156,7 +166,9 @@ export default function HostRoom({ spectator = false }) {
   return (
     <Shell wide nav={false}>
       {spectator ? (
-        <p className="mb-4 text-center text-xs font-semibold uppercase tracking-wide text-muted">Projector view, room {code}</p>
+        <p className="mb-4 text-center">
+          <span className="rounded-full bg-surface-2 px-3 py-1 text-xs font-bold uppercase tracking-wider text-muted">Projector view, room {code}</span>
+        </p>
       ) : null}
       {error ? (
         <Banner tone="bad" className="mb-4">
@@ -164,82 +176,151 @@ export default function HostRoom({ spectator = false }) {
         </Banner>
       ) : null}
       {phase === "lobby" && lobby ? (
-        <LobbyView lobby={lobby} code={code} spectator={spectator} onStart={() => act("host:start")} onKick={(id) => act("host:kick", { playerId: id })} busy={busy} />
+        <LobbyView lobby={lobby} code={code} spectator={spectator} busy={busy} onStart={() => act("host:start")} onKick={(id) => act("host:kick", { playerId: id })} onUpdate={(patch) => act("host:update", patch)} />
       ) : null}
-      {phase === "question" && question ? <QuestionView question={question} progress={progress} spectator={spectator} onClose={() => act("host:next")} busy={busy} /> : null}
+      {phase === "question" && question ? <QuestionView question={question} progress={progress} spectator={spectator} busy={busy} onClose={() => act("host:close")} /> : null}
       {phase === "reveal" && reveal ? (
-        <RevealView reveal={reveal} flags={flags} spectator={spectator} autoNext={autoNext} onAutoNext={setAutoNext} onNext={() => act("host:next")} onEnd={endGame} busy={busy} />
+        <RevealView reveal={reveal} flags={flags} spectator={spectator} busy={busy} onNext={() => act("host:next")} onAuto={(enabled) => act("host:auto", { enabled })} onEnd={endGame} />
       ) : null}
-      {phase === "ended" && end ? <EndView end={end} flags={flags} code={code} spectator={spectator} /> : null}
+      {phase === "ended" && end ? <EndView end={end} code={code} spectator={spectator} /> : null}
     </Shell>
   );
 }
 
-function LobbyView({ lobby, code, spectator, onStart, onKick, busy }) {
+function CodeBlock({ code, lobby }) {
   const url = joinUrl(code);
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
-      <Card className="flex flex-col items-center bg-gradient-to-b from-brand-50 to-white text-center">
-        <p className="text-sm font-semibold uppercase tracking-wide text-muted">Join at</p>
-        <p className="mt-1 text-lg font-bold text-brand-700">{url.replace(/^https?:\/\//, "")}</p>
-        <p className="mt-5 text-sm font-semibold uppercase tracking-wide text-muted">Room code</p>
-        <p className="mt-1 text-6xl font-extrabold tracking-[0.2em] text-brand-800 md:text-7xl" aria-label={`Room code ${code.split("").join(" ")}`}>
+    <div className="relative overflow-hidden rounded-card bg-brand-gradient p-6 text-white shadow-pop md:p-8">
+      <div aria-hidden="true" className="dot-grid pointer-events-none absolute inset-0 opacity-50" />
+      <div aria-hidden="true" className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rotate-12 rounded-[24px] bg-accent/90" />
+      <div className="relative flex flex-col items-center text-center">
+        <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-brand-100">Join at</p>
+        <p className="mt-1 text-xl font-bold md:text-2xl">{url.replace(/^https?:\/\//, "")}</p>
+        <p className="mt-6 text-[11px] font-extrabold uppercase tracking-[0.14em] text-brand-100">Room code</p>
+        <p className="display mt-1 text-[64px] font-extrabold leading-none tracking-[0.18em] lg:text-8xl" aria-label={`Room code ${code.split("").join(" ")}`}>
           {code}
         </p>
-        <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-muted">Or scan</p>
-        <div className="mt-2 rounded-2xl border border-line bg-white p-3 shadow-sm">
+        <p className="mt-6 text-[11px] font-extrabold uppercase tracking-[0.14em] text-brand-100">Or scan</p>
+        <div className="mt-2 inline-block rounded-card bg-white p-4 shadow-card">
           <QRCodeSVG value={url} size={200} aria-label="QR code to join" />
         </div>
-        <p className="mt-4 text-sm text-muted">
+        <p className="mt-5 text-sm font-semibold text-brand-100">
           {lobby.setTitle} / {lobby.questionCount} questions / {lobby.settings.questionTime} s each
         </p>
-        <p className="mt-1 text-xs text-muted">{lobby.scoring.text}</p>
-        {lobby.settings.examMode ? (
-          <Badge tone="warm" className="mt-2">
-            Exam mode: negative marking
-          </Badge>
-        ) : null}
-      </Card>
-      <Card>
-        <div className="flex items-center justify-between gap-3">
-          <h1 className="text-2xl font-extrabold">
-            {lobby.players.length} {lobby.players.length === 1 ? "player" : "players"} in
-          </h1>
-          {!spectator ? (
-            <Button size="lg" onClick={onStart} disabled={busy || lobby.players.length === 0}>
-              Start game
-            </Button>
-          ) : null}
+        <p className="mt-1 text-xs text-brand-100">{lobby.scoring.text}</p>
+        <div className="mt-3 flex flex-wrap justify-center gap-2">
+          {lobby.settings.examMode ? <Badge tone="accent">Exam mode: negative marking</Badge> : null}
+          <Badge tone="white">{lobby.settings.autoAdvance ? "Auto-advance on" : "Host advances manually"}</Badge>
         </div>
-        <p className="mt-1 text-sm text-muted">{lobby.college}. Names appear here the moment someone joins.</p>
-        {lobby.players.length === 0 ? (
-          <p className="mt-8 text-center text-muted">Waiting for the first player</p>
-        ) : (
-          <ul className="mt-5 flex flex-wrap gap-2" aria-label="Players">
-            {lobby.players.map((p) => (
-              <li key={p.id} className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold ${p.connected ? "border-line bg-surface" : "border-dashed border-line text-muted"}`}>
-                {p.name}
-                {!p.connected ? <span className="text-xs font-normal">(away)</span> : null}
-                {!spectator ? (
-                  <button type="button" onClick={() => onKick(p.id)} className="ml-1 rounded-full px-1 text-xs text-muted hover:bg-bad-bg hover:text-bad" aria-label={`Remove ${p.name}`}>
-                    &#10005;
-                  </button>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        )}
-        {!spectator ? (
-          <p className="mt-6 text-xs text-muted">
-            Second screen? Open <span className="font-semibold text-ink">{`${window.location.host}/watch/${code}`}</span> on the projector. It follows the game without host controls.
-          </p>
-        ) : null}
-      </Card>
+      </div>
     </div>
   );
 }
 
-function QuestionView({ question, progress, spectator, onClose, busy }) {
+function LobbyView({ lobby, code, spectator, busy, onStart, onKick, onUpdate }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
+      <CodeBlock code={code} lobby={lobby} />
+      <div className="flex flex-col gap-4">
+        <Card>
+          <div className="flex items-center justify-between gap-3">
+            <h1 className="display text-3xl font-bold">
+              <span key={lobby.players.length} className="pop inline-block text-brand-700 tabular">
+                {lobby.players.length}
+              </span>{" "}
+              {lobby.players.length === 1 ? "player" : "players"} in
+            </h1>
+            {!spectator ? (
+              <Button size="lg" onClick={onStart} disabled={busy || lobby.players.length === 0}>
+                Start game
+              </Button>
+            ) : null}
+          </div>
+          <p className="mt-1 text-sm text-muted">{lobby.college}. Names appear here the moment someone joins.</p>
+          {lobby.players.length === 0 ? (
+            <p className="mt-8 flex items-center justify-center gap-2 text-sm font-bold text-muted">
+              <span className="inline-block h-2.5 w-2.5 animate-pulse rounded-full bg-brand-600" aria-hidden="true" />
+              Waiting for the first player
+            </p>
+          ) : (
+            <ul className="mt-5 flex flex-wrap gap-2" aria-label="Players">
+              {lobby.players.map((p) => (
+                <li key={p.id} className={`pop flex items-center gap-2 rounded-full border px-4 py-2 text-base font-bold ${p.connected ? "border-line bg-surface" : "border-dashed border-line text-muted"}`}>
+                  {p.name}
+                  {!p.connected ? <span className="text-xs font-normal">(away)</span> : null}
+                  {!spectator ? (
+                    <button type="button" onClick={() => onKick(p.id)} className="ml-1 rounded-full px-1 text-xs text-muted hover:bg-bad-bg hover:text-bad" aria-label={`Remove ${p.name}`}>
+                      &#10005;
+                    </button>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+        {!spectator ? (
+          <Card>
+            <button type="button" onClick={() => setOpen((o) => !o)} className="flex w-full items-center justify-between text-left" aria-expanded={open}>
+              <span className="display text-lg font-bold">Room settings</span>
+              <span className="text-sm font-bold text-brand-700">{open ? "Hide" : "Change"}</span>
+            </button>
+            {open ? <SettingsPanel lobby={lobby} onUpdate={onUpdate} busy={busy} /> : <p className="mt-1 text-sm text-muted">Change the set, the pace, exam mode or auto-advance before you start.</p>}
+            <p className="mt-4 text-xs text-muted">
+              Second screen? Open <span className="font-bold text-ink">{`${window.location.host}/watch/${code}`}</span> on the projector. It follows the game without host controls.
+            </p>
+          </Card>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function SettingsPanel({ lobby, onUpdate, busy }) {
+  const [sets, setSets] = useState(null);
+  const [college, setCollege] = useState(lobby.college);
+  useEffect(() => {
+    api.get("/sets").then(setSets).catch(() => setSets([]));
+  }, []);
+  return (
+    <div className="mt-4 grid gap-4 sm:grid-cols-2">
+      <Field id="lobby-set" label="Question set">
+        <select id="lobby-set" className={inputClass} value={lobby.setId} onChange={(e) => onUpdate({ setId: e.target.value })} disabled={busy || !sets}>
+          {(sets || [{ id: lobby.setId, title: lobby.setTitle, count: lobby.questionCount }]).map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.title} ({s.count} Qs)
+            </option>
+          ))}
+        </select>
+      </Field>
+      <Field id="lobby-time" label="Time per question">
+        <select id="lobby-time" className={inputClass} value={lobby.settings.questionTime} onChange={(e) => onUpdate({ questionTime: Number(e.target.value) })} disabled={busy}>
+          {TIME_CHOICES.filter((t) => t.value).map((t) => (
+            <option key={t.value} value={t.value}>
+              {t.label}
+            </option>
+          ))}
+          {TIME_CHOICES.some((t) => t.value === lobby.settings.questionTime) ? null : <option value={lobby.settings.questionTime}>{lobby.settings.questionTime} s</option>}
+        </select>
+      </Field>
+      <Field id="lobby-college" label="College">
+        <div className="flex gap-2">
+          <input id="lobby-college" className={inputClass} value={college} onChange={(e) => setCollege(e.target.value)} maxLength={60} />
+          <Button variant="secondary" onClick={() => onUpdate({ college: college.trim() })} disabled={busy || !college.trim() || college.trim() === lobby.college}>
+            Save
+          </Button>
+        </div>
+      </Field>
+      <div className="flex flex-col gap-3">
+        <Toggle id="lobby-auto" compact checked={lobby.settings.autoAdvance} onChange={(v) => onUpdate({ autoAdvance: v })} title="Auto-advance" text="Next question 8 s after each reveal." />
+        <Toggle id="lobby-exam" compact checked={lobby.settings.examMode} onChange={(v) => onUpdate({ examMode: v })} title="Exam mode" text="Wrong answers cost 250 points." />
+      </div>
+    </div>
+  );
+}
+
+function QuestionView({ question, progress, spectator, busy, onClose }) {
+  const pct = progress.playerCount ? Math.round((100 * progress.answeredCount) / progress.playerCount) : 0;
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -250,17 +331,22 @@ function QuestionView({ question, progress, spectator, onClose, busy }) {
           <Badge>{topicLabel(question.topic)}</Badge>
           <Badge>{question.difficulty}</Badge>
         </div>
-        <div className="text-lg font-bold tabular">
-          {progress.answeredCount} / {progress.playerCount} answered
+        <div className="flex flex-col items-end gap-1">
+          <span className="text-2xl font-extrabold tabular">
+            {progress.answeredCount} / {progress.playerCount} answered
+          </span>
+          <span className="h-2 w-40 overflow-hidden rounded-full bg-line" aria-hidden="true">
+            <span className="block h-full rounded-full bg-brand-600" style={{ width: `${pct}%`, transition: "width 300ms" }} />
+          </span>
         </div>
       </div>
       <Timer endsAt={question.endsAt} durationMs={question.durationMs} size="lg" />
-      <Card className="md:p-8">
+      <Card className="border-l-8 border-l-brand-700 p-6 md:p-8 lg:p-10">
         <QuestionBody text={question.text} table={question.table} image={question.image} size="lg" />
       </Card>
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2">
         {question.options.map((opt, i) => (
-          <OptionTile key={i} index={i} text={opt} size="lg" />
+          <OptionTile key={`${question.qIndex}-${i}`} index={i} text={opt} size="lg" delay={i * 70} />
         ))}
       </div>
       {!spectator ? (
@@ -274,8 +360,9 @@ function QuestionView({ question, progress, spectator, onClose, busy }) {
   );
 }
 
-function RevealView({ reveal, flags, spectator, autoNext, onAutoNext, onNext, onEnd, busy }) {
+function RevealView({ reveal, flags, spectator, busy, onNext, onAuto, onEnd }) {
   const flagged = reveal.leaderboard.filter((p) => flags[p.id]);
+  const nextLabel = reveal.isLast ? "Show final results" : "Next question";
   return (
     <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
       <div className="flex flex-col gap-4">
@@ -283,45 +370,53 @@ function RevealView({ reveal, flags, spectator, autoNext, onAutoNext, onNext, on
           <Badge tone="brand">
             Question {reveal.qIndex + 1} of {reveal.total}
           </Badge>
-          <p className="text-sm font-semibold text-muted">
-            {reveal.correctCount} of {reveal.playerCount} correct, average {seconds(reveal.avgElapsedMs)}
-          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <Stat label="Correct" value={`${reveal.correctCount} of ${reveal.playerCount}`} tone="good" className="animate-rise py-3" />
+            <Stat label="Average time" value={seconds(reveal.avgElapsedMs)} className="animate-rise py-3" />
+          </div>
         </div>
-        <Card>
-          <QuestionBody text={reveal.text} />
+        <Card className="border-l-8 border-l-brand-700">
+          <QuestionBody text={reveal.text} size="md" />
         </Card>
         <div className="grid gap-3 md:grid-cols-2">
           {reveal.options.map((opt, i) => (
-            <OptionTile key={i} index={i} text={opt} state={i === reveal.correct ? "correct" : "dim"} count={reveal.counts[i]} total={reveal.answered} />
+            <OptionTile key={`r-${reveal.qIndex}-${i}`} index={i} text={opt} state={i === reveal.correct ? "correct" : "dim"} count={reveal.counts[i]} total={reveal.answered} />
           ))}
         </div>
         {reveal.explanation ? (
-          <Card className="bg-surface">
-            <p className="text-sm font-semibold uppercase tracking-wide text-muted">Why</p>
-            <p className="mt-1 text-base">{reveal.explanation}</p>
-          </Card>
+          <div className="rounded-card border-2 border-accent/40 bg-accent-soft p-5">
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-warm">Why</p>
+            <p className="mt-1 text-base text-ink">{reveal.explanation}</p>
+          </div>
         ) : null}
         {flagged.length && !spectator ? <Banner tone="warm">Left the tab during a question: {flagged.map((p) => `${p.name} (${flags[p.id]})`).join(", ")}</Banner> : null}
-        {!spectator ? (
-          <div className="flex flex-wrap items-center justify-end gap-3">
-            <label className="mr-auto flex cursor-pointer items-center gap-2 text-xs text-muted">
-              <input type="checkbox" className="h-4 w-4 accent-brand-700" checked={autoNext} onChange={(e) => onAutoNext(e.target.checked)} />
-              Auto next after {AUTO_NEXT_SECONDS} s
-            </label>
-            <span className="text-xs text-muted">Enter key also moves on</span>
-            <Button variant="ghost" onClick={onEnd} disabled={busy}>
-              End game
-            </Button>
-            <Button size="lg" onClick={onNext} disabled={busy}>
-              {reveal.isLast ? "Show final results" : "Next question"}
-            </Button>
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-line bg-surface px-4 py-3">
+          <div className="flex items-center gap-3 text-sm font-bold text-muted">
+            {reveal.autoAdvance && reveal.autoNextAt ? (
+              <Countdown endsAt={reveal.autoNextAt} prefix={reveal.isLast ? "Results in" : "Next question in"} className="text-ink" />
+            ) : (
+              <span>{spectator ? "Waiting for the host" : "Auto-advance paused"}</span>
+            )}
+            {!spectator ? (
+              <button type="button" onClick={() => onAuto(!reveal.autoAdvance)} className="rounded-full border border-line bg-white px-3 py-1 text-xs font-bold text-brand-700 hover:bg-brand-50" disabled={busy}>
+                {reveal.autoAdvance ? "Pause" : "Resume auto"}
+              </button>
+            ) : null}
           </div>
-        ) : (
-          <p className="text-right text-sm text-muted">{reveal.isLast ? "Final results coming up" : "Next question coming up"}</p>
-        )}
+          {!spectator ? (
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" onClick={onEnd} disabled={busy}>
+                End game
+              </Button>
+              <Button size="lg" onClick={onNext} disabled={busy}>
+                {nextLabel}
+              </Button>
+            </div>
+          ) : null}
+        </div>
       </div>
-      <Card>
-        <h2 className="text-xl font-extrabold">Leaderboard</h2>
+      <Card className="animate-rise">
+        <h2 className="display text-2xl font-bold">Live standings</h2>
         <p className="mb-4 text-sm text-muted">Top 10 of {reveal.leaderboard.length}. Arrows show movement this round.</p>
         <Leaderboard entries={reveal.leaderboard} limit={10} />
       </Card>
@@ -329,15 +424,29 @@ function RevealView({ reveal, flags, spectator, autoNext, onAutoNext, onNext, on
   );
 }
 
-function EndView({ end, flags, code, spectator }) {
+const podiumOrder = ["sm:order-2 sm:-translate-y-4", "sm:order-1", "sm:order-3"];
+const podiumDelay = [0.5, 0.25, 0];
+
+function EndView({ end, code, spectator }) {
   const [tab, setTab] = useState("questions");
   const board = end.leaderboard;
   const insights = end.insights;
   const podium = board.slice(0, 3);
+  const tabs = spectator
+    ? [
+        ["questions", "Questions"],
+        ["topics", "Topics"],
+      ]
+    : [
+        ["questions", "Questions"],
+        ["topics", "Topics"],
+        ["players", "Players"],
+        ["fairness", "Fairness"],
+      ];
 
   const exportCsv = () => {
     const rows = [["Rank", "Name", "Score", "Correct", "Wrong", "Skipped", "Accuracy %", "Avg speed (s)", "Tab switches"]];
-    for (const p of insights.players) rows.push([p.rank, p.name, p.score, p.correct, p.wrong, p.skipped, p.accuracy, p.avgSpeedS ?? "", p.tabSwitches ?? 0]);
+    for (const p of insights.players || []) rows.push([p.rank, p.name, p.score, p.correct, p.wrong, p.skipped, p.accuracy, p.avgSpeedS ?? "", p.tabSwitches ?? 0]);
     rows.push([]);
     rows.push(["Question", "Topic", "Difficulty", "Correct %", "Avg time (s)", "Correct option", "Answers per option"]);
     for (const q of insights.questions) rows.push([q.text, q.topic, q.difficulty, q.pctCorrect, q.avgElapsedMs ? (q.avgElapsedMs / 1000).toFixed(1) : "", q.options[q.correct], q.counts.join(" | ")]);
@@ -348,10 +457,10 @@ function EndView({ end, flags, code, spectator }) {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-muted">
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-brand-800">
             {insights.setTitle} / {insights.college}
           </p>
-          <h1 className="text-3xl font-extrabold">Final results</h1>
+          <h1 className="display mt-1 text-4xl font-extrabold">Final results</h1>
         </div>
         {!spectator ? (
           <div className="flex gap-2">
@@ -365,91 +474,83 @@ function EndView({ end, flags, code, spectator }) {
         ) : null}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-3 sm:items-end">
         {podium.map((p, i) => (
-          <Card key={p.id} className={["border-warm/60 bg-warm-bg/60", "border-line bg-surface", "border-warm/30 bg-warm-bg/25"][i]}>
-            <div className="flex items-center gap-3">
-              <span className={`flex h-10 w-10 items-center justify-center rounded-full text-lg font-extrabold text-white ${["bg-warm", "bg-muted", "bg-warm/70"][i]}`}>{i + 1}</span>
-              <p className="text-sm font-semibold uppercase tracking-wide text-muted">{["Winner", "Second", "Third"][i]}</p>
+          <motion.div
+            key={p.id}
+            initial={{ y: 24, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 300, damping: 24, delay: podiumDelay[i] }}
+            className={`relative overflow-hidden rounded-card border p-5 ${podiumOrder[i]} ${i === 0 ? "border-0 bg-brand-gradient text-white shadow-pop" : i === 1 ? "border-line bg-surface-2" : "border-line bg-white"}`}
+          >
+            {i === 0 ? <Confetti pieces={20} /> : null}
+            <div className="relative">
+              <div className="flex items-center gap-3">
+                <span className={`display flex h-12 w-12 items-center justify-center rounded-full text-xl font-bold ${i === 0 ? "bg-accent text-ink" : i === 1 ? "bg-ink text-white" : "bg-muted text-white"}`}>{i + 1}</span>
+                <p className={`text-[11px] font-extrabold uppercase tracking-[0.14em] ${i === 0 ? "text-brand-100" : "text-muted"}`}>{["Winner", "Second", "Third"][i]}</p>
+              </div>
+              <p className={`display mt-4 truncate font-bold ${i === 0 ? "text-3xl lg:text-4xl" : "text-2xl"}`}>{p.name}</p>
+              <p className={`text-2xl font-extrabold tabular ${i === 0 ? "text-accent" : "text-brand-700"}`}>{p.score} pts</p>
             </div>
-            <p className="mt-3 truncate text-2xl font-extrabold">{p.name}</p>
-            <p className="text-lg font-bold tabular text-brand-700">{p.score} pts</p>
-          </Card>
+          </motion.div>
         ))}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_1.3fr]">
         <Card>
-          <h2 className="text-xl font-extrabold">Standings</h2>
+          <h2 className="display text-2xl font-bold">Standings</h2>
           <div className="mt-4">
-            <Leaderboard entries={board} limit={50} showDelta={false} showLast={false} dense />
+            <Leaderboard entries={board} limit={60} showDelta={false} showLast={false} dense />
           </div>
         </Card>
         <Card>
-          <div className="flex flex-wrap gap-2" role="tablist" aria-label="Insights">
-            {[
-              ["questions", "Questions"],
-              ["topics", "Topics"],
-              ["players", "Players"],
-              ["fairness", "Fairness"],
-            ].map(([key, label]) => (
-              <button
-                key={key}
-                role="tab"
-                aria-selected={tab === key}
-                onClick={() => setTab(key)}
-                className={`rounded-lg px-3 py-1.5 text-sm font-semibold ${tab === key ? "bg-brand-700 text-white" : "bg-surface text-muted hover:text-ink"}`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          <Segmented options={tabs} value={tab} onChange={setTab} label="Insights" />
           <div className="mt-4" role="tabpanel">
             {tab === "questions" ? <QuestionInsights questions={insights.questions} /> : null}
             {tab === "topics" ? (
               <ul className="flex flex-col gap-3">
                 {insights.topics.map((t) => (
                   <li key={t.topic}>
-                    <div className="flex justify-between text-sm font-semibold">
+                    <div className="flex justify-between text-sm font-bold">
                       <span>{topicLabel(t.topic)}</span>
                       <span className="tabular">{t.accuracy}% correct</span>
                     </div>
-                    <div className="mt-1 h-2.5 overflow-hidden rounded-full bg-line">
-                      <div className="h-full rounded-full bg-brand-600" style={{ width: `${t.accuracy}%` }} />
+                    <div className="mt-1 h-3 overflow-hidden rounded-full bg-line">
+                      <div className="h-full origin-left animate-grow rounded-full bg-brand-gradient" style={{ width: `${t.accuracy}%` }} />
                     </div>
                   </li>
                 ))}
               </ul>
             ) : null}
-            {tab === "players" ? (
-              <div className="overflow-x-auto">
+            {tab === "players" && insights.players ? (
+              <div className="max-h-[28rem] overflow-auto rounded-xl border border-line">
                 <table className="w-full text-left text-sm">
-                  <thead>
-                    <tr className="text-xs uppercase tracking-wide text-muted">
-                      <th className="py-2 pr-3">#</th>
-                      <th className="py-2 pr-3">Name</th>
-                      <th className="py-2 pr-3">Score</th>
-                      <th className="py-2 pr-3">Accuracy</th>
-                      <th className="py-2 pr-3">Avg speed</th>
-                      <th className="py-2 pr-3">Tab left</th>
+                  <thead className="sticky top-0 bg-surface-2 text-[11px] uppercase tracking-wider text-muted">
+                    <tr>
+                      <th className="px-3 py-2">#</th>
+                      <th className="px-3 py-2">Name</th>
+                      <th className="px-3 py-2">Score</th>
+                      <th className="px-3 py-2">Accuracy</th>
+                      <th className="px-3 py-2">Avg speed</th>
+                      <th className="px-3 py-2">Tab left</th>
                     </tr>
                   </thead>
                   <tbody>
                     {insights.players.map((p) => (
-                      <tr key={p.name} className="border-t border-line">
-                        <td className="py-2 pr-3 tabular">{p.rank}</td>
-                        <td className="py-2 pr-3 font-semibold">{p.name}</td>
-                        <td className="py-2 pr-3 tabular">{p.score}</td>
-                        <td className="py-2 pr-3 tabular">{p.accuracy}%</td>
-                        <td className="py-2 pr-3 tabular">{p.avgSpeedS ?? "-"} s</td>
-                        <td className="py-2 pr-3 tabular">{flags[p.id] ?? p.tabSwitches ?? 0}</td>
+                      <tr key={p.id} className="border-t border-line">
+                        <td className="px-3 py-2 font-bold tabular">{p.rank}</td>
+                        <td className="px-3 py-2 font-semibold">{p.name}</td>
+                        <td className="px-3 py-2 tabular">{p.score}</td>
+                        <td className="px-3 py-2 tabular">{p.accuracy}%</td>
+                        <td className="px-3 py-2 tabular">{p.avgSpeedS ?? "-"} s</td>
+                        <td className="px-3 py-2 tabular">{p.tabSwitches || 0}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
             ) : null}
-            {tab === "fairness" ? <FairnessPanel fairness={insights.fairness} /> : null}
+            {tab === "fairness" && insights.fairness ? <FairnessPanel fairness={insights.fairness} /> : null}
           </div>
         </Card>
       </div>
@@ -463,7 +564,7 @@ function QuestionInsights({ questions }) {
       {questions.map((q) => (
         <li key={q.index} className="rounded-xl border border-line p-3">
           <div className="flex items-start justify-between gap-3">
-            <p className="text-sm font-semibold">
+            <p className="text-sm font-bold">
               {q.index + 1}. {q.text}
             </p>
             <Badge tone={q.pctCorrect >= 70 ? "good" : q.pctCorrect >= 40 ? "warm" : "bad"}>{q.pctCorrect}% correct</Badge>

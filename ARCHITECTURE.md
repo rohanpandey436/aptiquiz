@@ -26,11 +26,12 @@ One Node.js process is the referee. It owns the clock, the question order, every
 | Layer | File | Responsibility |
 |---|---|---|
 | Bootstrap | `server/index.js` | Creates the HTTP server, Socket.IO server, security headers, static serving of the built client, SPA fallback. |
-| Game engine | `server/game.js` | `GameManager`: rooms, players, question lifecycle, timing, scoring, ranks, reports. Pure game logic, no transport details. |
+| Game engine | `server/game.js` | `GameManager`: rooms, players, question lifecycle, timing, scoring, auto-advance, ranks, reports. It owns all game state and decides what every screen receives; it emits through the injected Socket.IO server rather than knowing about HTTP or payload parsing. |
 | Transport | `server/sockets.js` | Maps Socket.IO events to engine calls. Validates every payload, rate-limits every socket, measures round-trip time. Roles: host, player, spectator (read-only projector view). |
 | REST | `server/routes.js` | Health, question sets (read, create, edit, duplicate, delete), league, public room lookup. Host passcode guards anything that exposes answers. |
 | Persistence | `server/store.js` | JSON files for question sets and finished games, written atomically. Seeds the built-in sets on first start. |
-| Validation | `server/validate.js` | Small, reusable sanitizers for names, codes, tokens, integers, plus a token-bucket rate limiter. |
+| Validation | `server/validate.js` | Sanitizers for names, codes, tokens, integers, question sets, plus a token-bucket rate limiter. |
+| Access | `server/auth.js` | Optional editor passcode (faculty mode) with digest comparison and a per-address limit on wrong attempts. |
 | Seed data | `server/seed/questions.js` | 54 verified questions across quantitative, logical, verbal and data interpretation, grouped into six sets. |
 | Client | `client/src` | React + Vite + Tailwind. Pages: Home, HostCreate, HostRoom, Play, League, Sets. Components: Timer, OptionTile, Leaderboard, QuestionBody, Layout, ui. |
 | Load test | `scripts/loadtest.js` | Spawns N bot players with socket.io-client, plays a full game, verifies delivery, rejections and leaderboard consistency. |
@@ -53,7 +54,7 @@ One Node.js process is the referee. It owns the clock, the question order, every
 4. A player taps position `p`. The server looks up that player's permutation to recover the original option, stamps the arrival with its own clock, and computes `elapsed = (arrival - startedAt) - min(playerRTT, 400 ms)`.
 5. The answer is accepted only if it is the player's first for this question, the question is still open, and `elapsed <= duration`. Points are computed immediately but not applied yet, so nothing leaks through the live counter.
 6. The question closes when the timer fires or 900 ms after every connected player has answered. Scores are applied, ranks recomputed, the round summary stored, and one reveal is pushed to all screens at the same moment. Each player's reveal is expressed in their own option order.
-7. Host sends `host:next`. Repeat, or end the game, persist the summary, and send each player their report.
+7. With auto-advance on (the default) the engine schedules the next question 8 seconds after the reveal and tells every screen when; `host:next` skips the wait, `host:auto` pauses or resumes, and `host:close` ends an open round early. After the last question the engine persists the summary (unless the room is a practice room) and sends each player their report.
 
 ## Fairness under network delay
 
@@ -73,7 +74,7 @@ Late answers are judged on the compensated time, so two players who tap at the s
 - All host actions require the room's host token, which only the creating browser holds.
 - A player who hides the tab during a question is flagged to the host, who sees the count on the reveal and results screens and in the CSV export.
 - Rejoining requires the secret seat token issued at join time; a second device with the same token replaces the first, so a seat cannot be shared live.
-- Question sets with answers are behind a host passcode, so a player cannot fetch the answer key through the API during a game.
+- The answer key of a set that is in play is withheld from the editor API until the game ends, and a college can lock the editor with `HOST_PASSCODE`. Hosting itself needs no passcode, so a parallel room on the same built-in set remains possible in open mode; that trade-off is documented in the README.
 
 ## Reconnection
 

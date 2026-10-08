@@ -1,28 +1,30 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Shell } from "../components/Layout.jsx";
-import { Badge, Banner, Button, Card, Field, Spinner, inputClass } from "../components/ui.jsx";
+import { Badge, Banner, Button, Card, Field, Segmented, Spinner, inputClass } from "../components/ui.jsx";
+import { TIME_CHOICES, Toggle } from "../components/RoomSettings.jsx";
 import { api } from "../lib/api.js";
 import { request } from "../lib/socket.js";
 import { hostSeat } from "../lib/storage.js";
 import { topicLabel } from "../lib/format.js";
+import { QUICK_EXAMPLE, parseQuickQuestions } from "../lib/quickParse.js";
 
-const TIME_CHOICES = [
-  { value: 0, label: "Set default" },
-  { value: 10, label: "10 s" },
-  { value: 15, label: "15 s" },
-  { value: 20, label: "20 s" },
-  { value: 30, label: "30 s" },
-  { value: 45, label: "45 s" },
+const SOURCES = [
+  ["builtin", "Built-in sets"],
+  ["own", "Write your own"],
 ];
 
 export default function HostCreate() {
   const navigate = useNavigate();
+  const [source, setSource] = useState("builtin");
   const [sets, setSets] = useState(null);
   const [setId, setSetId] = useState("");
+  const [ownTitle, setOwnTitle] = useState("");
+  const [ownText, setOwnText] = useState("");
   const [college, setCollege] = useState("Lloyd Institute");
   const [questionTime, setQuestionTime] = useState(0);
   const [examMode, setExamMode] = useState(false);
+  const [autoAdvance, setAutoAdvance] = useState(true);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -31,21 +33,33 @@ export default function HostCreate() {
       .get("/sets")
       .then((list) => {
         setSets(list);
-        if (list.length && !setId) setSetId(list[0].id);
+        if (list.length) setSetId((current) => current || list[0].id);
       })
       .catch((err) => setError(err.message));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const parsed = useMemo(() => parseQuickQuestions(ownText), [ownText]);
+  const ownReady = source === "own" && parsed.count > 0 && parsed.errors.length === 0;
+  const canCreate = source === "builtin" ? !!setId : ownReady;
 
   const create = async (e) => {
     e.preventDefault();
     setError("");
     setBusy(true);
-    const res = await request("host:create", { setId, college: college.trim(), questionTime: questionTime || undefined, examMode });
+    try {
+      let chosenSetId = setId;
+      if (source === "own") {
+        const saved = await api.post("/sets", { title: ownTitle.trim() || "My questions", questionTime: questionTime || 20, questions: parsed.questions });
+        chosenSetId = saved.id;
+      }
+      const res = await request("host:create", { setId: chosenSetId, college: college.trim(), questionTime: questionTime || undefined, examMode, autoAdvance });
+      if (!res.ok) throw new Error(res.error || "Could not create the room");
+      hostSeat.set(res.code, { hostToken: res.hostToken });
+      navigate(`/host/${res.code}`);
+    } catch (err) {
+      setError(err.message);
+    }
     setBusy(false);
-    if (!res.ok) return setError(res.error || "Could not create the room");
-    hostSeat.set(res.code, { hostToken: res.hostToken });
-    navigate(`/host/${res.code}`);
   };
 
   const chosen = sets?.find((s) => s.id === setId);
@@ -53,58 +67,97 @@ export default function HostCreate() {
   return (
     <Shell>
       <div className="mx-auto max-w-3xl">
-        <h1 className="text-3xl font-extrabold">Host a game</h1>
-        <p className="mt-1 text-muted">Pick a question set, choose the pace, and you get a room code to put on the screen.</p>
+        <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-brand-800">Host</p>
+        <h1 className="display mt-2 text-4xl font-extrabold">Host a game</h1>
+        <p className="mt-2 text-muted">Pick a question set or write your own, choose a pace, and you get a room code for the big screen. Everything can still change in the lobby.</p>
 
-        <form onSubmit={create} className="mt-6 flex flex-col gap-6">
+        <form onSubmit={create} className="mt-8 flex flex-col gap-6">
           <Card>
-            <h2 className="font-bold">Question set</h2>
-            {!sets ? (
-              <div className="mt-3">
-                <Spinner label="Loading sets" />
-              </div>
-            ) : sets.length === 0 ? (
-              <p className="mt-3 text-sm text-muted">
-                No sets yet. <Link to="/sets" className="font-semibold text-brand-700 underline">Create one</Link> first.
-              </p>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="display text-xl font-bold">Questions</h2>
+              <Segmented options={SOURCES} value={source} onChange={setSource} label="Question source" />
+            </div>
+
+            {source === "builtin" ? (
+              !sets ? (
+                <div className="mt-4">
+                  <Spinner label="Loading sets" />
+                </div>
+              ) : sets.length === 0 ? (
+                <p className="mt-4 text-sm text-muted">No sets yet. Switch to "Write your own".</p>
+              ) : (
+                <div className="mt-4 grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Question set">
+                  {sets.map((s) => {
+                    const active = s.id === setId;
+                    return (
+                      <button
+                        type="button"
+                        key={s.id}
+                        role="radio"
+                        aria-checked={active}
+                        onClick={() => setSetId(s.id)}
+                        className={`press rounded-tile border-2 p-4 text-left ${active ? "border-brand-700 bg-brand-50 shadow-card" : "border-line hover:border-brand-200"}`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="display text-lg font-bold leading-tight">{s.title}</span>
+                          <Badge tone={active ? "brand" : "neutral"}>{s.count} Qs</Badge>
+                        </div>
+                        <p className="mt-1 text-sm text-muted">{s.description}</p>
+                        <p className="mt-2 text-xs text-muted">
+                          {Object.entries(s.topics)
+                            .map(([t, n]) => `${topicLabel(t)} ${n}`)
+                            .join(" / ")}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              )
             ) : (
-              <div className="mt-3 grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Question set">
-                {sets.map((s) => {
-                  const active = s.id === setId;
-                  return (
-                    <button
-                      type="button"
-                      key={s.id}
-                      role="radio"
-                      aria-checked={active}
-                      onClick={() => setSetId(s.id)}
-                      className={`rounded-2xl border-2 p-4 text-left transition-colors ${active ? "border-brand-700 bg-brand-50" : "border-line hover:border-brand-200"}`}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="font-bold">{s.title}</span>
-                        <Badge tone={active ? "brand" : "neutral"}>{s.count} Qs</Badge>
-                      </div>
-                      <p className="mt-1 text-sm text-muted">{s.description}</p>
-                      <p className="mt-2 text-xs text-muted">
-                        {Object.entries(s.topics)
-                          .map(([t, n]) => `${topicLabel(t)} ${n}`)
-                          .join(" / ")}
-                      </p>
+              <div className="mt-4 flex flex-col gap-4">
+                <Field id="own-title" label="Set name">
+                  <input id="own-title" className={inputClass} value={ownTitle} onChange={(e) => setOwnTitle(e.target.value)} placeholder="Friday practice" maxLength={80} />
+                </Field>
+                <Field id="own-text" label="Questions, written plainly" hint='One question per block, options as "A) text", mark the answer with "Answer: B" or a * before the correct option. Optional lines: "Topic: logical" and "Why: ...".'>
+                  <textarea id="own-text" className={`${inputClass} min-h-56 font-mono text-sm`} value={ownText} onChange={(e) => setOwnText(e.target.value)} placeholder={QUICK_EXAMPLE} spellCheck={false} />
+                </Field>
+                <div className="flex flex-wrap items-center gap-2 text-sm">
+                  {parsed.count === 0 ? (
+                    <span className="text-muted">Start typing, or</span>
+                  ) : parsed.errors.length ? (
+                    <Badge tone="bad">
+                      {parsed.count} {parsed.count === 1 ? "question" : "questions"}, {parsed.errors.length} to fix
+                    </Badge>
+                  ) : (
+                    <Badge tone="good">
+                      {parsed.count} {parsed.count === 1 ? "question" : "questions"} ready
+                    </Badge>
+                  )}
+                  {parsed.count === 0 ? (
+                    <button type="button" className="font-bold text-brand-700 underline" onClick={() => setOwnText(QUICK_EXAMPLE)}>
+                      paste the example
                     </button>
-                  );
-                })}
+                  ) : null}
+                  <Link to="/sets" className="ml-auto font-bold text-brand-700 underline">
+                    Need images or tables? Open the full editor
+                  </Link>
+                </div>
+                {parsed.errors.length ? (
+                  <ul className="rounded-xl bg-bad-bg px-4 py-3 text-sm font-semibold text-bad">
+                    {parsed.errors.slice(0, 4).map((e) => (
+                      <li key={e}>{e}</li>
+                    ))}
+                  </ul>
+                ) : null}
               </div>
             )}
-            <p className="mt-3 text-sm text-muted">
-              Want your own questions? <Link to="/sets" className="font-semibold text-brand-700 underline">Open the question editor</Link>.
-            </p>
           </Card>
 
           <Card className="grid gap-5 sm:grid-cols-2">
             <Field id="college" label="College" hint="Scores from this room count towards this college in the league.">
               <input id="college" className={inputClass} value={college} onChange={(e) => setCollege(e.target.value)} maxLength={60} required />
             </Field>
-            <Field id="qtime" label="Time per question" hint={chosen ? `Set default is ${chosen.questionTime} s.` : ""}>
+            <Field id="qtime" label="Time per question" hint={source === "builtin" && chosen ? `Set default is ${chosen.questionTime} s.` : "Default is 20 s."}>
               <select id="qtime" className={inputClass} value={questionTime} onChange={(e) => setQuestionTime(Number(e.target.value))}>
                 {TIME_CHOICES.map((t) => (
                   <option key={t.value} value={t.value}>
@@ -113,22 +166,17 @@ export default function HostCreate() {
                 ))}
               </select>
             </Field>
-            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-line p-4 sm:col-span-2">
-              <input type="checkbox" className="mt-1 h-5 w-5 accent-brand-700" checked={examMode} onChange={(e) => setExamMode(e.target.checked)} />
-              <span>
-                <span className="font-semibold">Exam mode: negative marking</span>
-                <span className="block text-sm text-muted">A wrong answer costs 250 points, like a real placement test. Skipping costs nothing. Players see this rule in the lobby.</span>
-              </span>
-            </label>
+            <Toggle id="auto" checked={autoAdvance} onChange={setAutoAdvance} title="Auto-advance" text="The next question starts by itself 8 seconds after each reveal. You can still press Next or pause." />
+            <Toggle id="exam" checked={examMode} onChange={setExamMode} title="Exam mode: negative marking" text="A wrong answer costs 250 points, like a real placement test. Players see this rule in the lobby." />
           </Card>
 
           {error ? <Banner tone="bad">{error}</Banner> : null}
 
-          <div className="flex items-center gap-3">
-            <Button type="submit" size="lg" disabled={!setId || busy}>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button type="submit" size="lg" disabled={!canCreate || busy}>
               {busy ? "Creating room" : "Create room"}
             </Button>
-            <span className="text-sm text-muted">You can start the game once the first player joins.</span>
+            <span className="text-sm text-muted">{source === "own" ? "Your set is saved for reuse when the room is created." : "You can start the game once the first player joins."}</span>
           </div>
         </form>
       </div>

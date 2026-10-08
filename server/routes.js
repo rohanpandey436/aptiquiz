@@ -1,30 +1,32 @@
-import crypto from "node:crypto";
 import { Router } from "express";
 import * as store from "./store.js";
 import { cleanCode, cleanId, cleanInt } from "./validate.js";
-
-const HOST_PASSCODE = process.env.HOST_PASSCODE || "faculty";
-
-function keyMatches(provided) {
-  const a = Buffer.from(String(provided || ""));
-  const b = Buffer.from(HOST_PASSCODE);
-  return a.length === b.length && crypto.timingSafeEqual(a, b);
-}
+import { verifyHostKey, isBlocked, clientIp, editorLocked } from "./auth.js";
 
 function requireHostKey(req, res, next) {
-  if (keyMatches(req.get("x-host-key"))) return next();
-  res.status(401).json({ error: "Host passcode required" });
+  const ip = clientIp(req);
+  if (isBlocked(ip)) return res.status(429).json({ error: "Too many wrong passcodes. Try again in 15 minutes." });
+  const result = verifyHostKey(req.get("x-host-key"), ip);
+  if (result.ok) return next();
+  res.status(result.blocked ? 429 : 401).json({ error: result.blocked ? "Too many wrong passcodes. Try again in 15 minutes." : "Host passcode required" });
 }
 
 export function createRouter(game) {
   const router = Router();
 
   router.get("/health", (_req, res) => {
-    res.json({ ok: true, rooms: game.rooms.size, uptimeSeconds: Math.round(process.uptime()) });
+    res.json({ ok: true, rooms: game.rooms.size, uptimeSeconds: Math.round(process.uptime()), editorLocked: editorLocked() });
+  });
+
+  router.get("/config", (_req, res) => {
+    res.json({ editorLocked: editorLocked() });
   });
 
   router.post("/host/verify", (req, res) => {
-    res.json({ ok: keyMatches(req.body?.passcode) });
+    const ip = clientIp(req);
+    if (isBlocked(ip)) return res.status(429).json({ ok: false, error: "Too many wrong passcodes. Try again in 15 minutes." });
+    const result = verifyHostKey(req.body?.passcode, ip);
+    res.json({ ok: result.ok });
   });
 
   router.get("/sets", (_req, res) => {
@@ -34,7 +36,8 @@ export function createRouter(game) {
   router.get("/sets/:id", requireHostKey, (req, res) => {
     const set = store.getSet(cleanId(req.params.id));
     if (!set) return res.status(404).json({ error: "Set not found" });
-    res.json(set);
+    if (game.setsInPlay().has(set.id)) return res.json(store.withoutAnswers(set));
+    res.json({ ...set, locked: false });
   });
 
   router.post("/sets", requireHostKey, (req, res) => {
@@ -44,7 +47,9 @@ export function createRouter(game) {
   });
 
   router.post("/sets/:id/duplicate", requireHostKey, (req, res) => {
-    const copy = store.duplicateSet(cleanId(req.params.id));
+    const id = cleanId(req.params.id);
+    if (game.setsInPlay().has(id)) return res.status(409).json({ error: "This set is being played right now. Duplicate it after the game ends." });
+    const copy = store.duplicateSet(id);
     if (!copy) return res.status(404).json({ error: "Set not found" });
     res.json(copy);
   });
@@ -77,3 +82,4 @@ export function createRouter(game) {
 
   return router;
 }
+
