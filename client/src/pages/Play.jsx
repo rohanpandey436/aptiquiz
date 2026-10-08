@@ -516,7 +516,7 @@ function RevealView({ reveal, me }) {
               </div>
             </div>
             <div className="mt-4">
-              <Leaderboard entries={reveal.top} highlightId={me?.id} limit={5} dense />
+              <Leaderboard entries={reveal.top} highlightId={me?.id} limit={5} dense showLast={false} />
             </div>
           </Card>
         </div>

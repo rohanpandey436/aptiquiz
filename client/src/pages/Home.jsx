@@ -77,7 +77,7 @@ export default function Home() {
                 <span className="h-2 w-2 rounded-full bg-ink" aria-hidden="true" />
                 Live aptitude arena
               </span>
-              <h1 className="display mt-5 text-5xl font-extrabold leading-[0.95] sm:text-6xl md:text-7xl">
+              <h1 className="display mt-5 text-5xl font-extrabold leading-[0.95] sm:text-6xl md:text-[56px] lg:text-7xl">
                 Aptitude practice
                 <br />
                 as a <span className="text-accent">live game.</span>

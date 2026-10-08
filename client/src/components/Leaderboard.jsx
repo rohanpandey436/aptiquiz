@@ -35,18 +35,18 @@ export function Leaderboard({ entries, highlightId, limit = 10, showDelta = true
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
               transition={{ type: "spring", stiffness: 420, damping: 34 }}
-              className={`flex items-center gap-2 rounded-xl border pl-3 pr-2 sm:gap-3 sm:px-3 ${dense ? "py-2" : "py-3"} ${tone} ${e.connected === false ? "opacity-60" : ""}`}
+              className={`flex items-center gap-2 rounded-xl border pl-3 pr-2 ${dense ? "py-2" : "py-3"} ${tone} ${e.connected === false ? "opacity-60" : ""}`}
             >
               <span className={`display flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold tabular ${rankChip(e.rank)}`}>{e.rank}</span>
               <span className="min-w-0 flex-1 truncate font-semibold">
                 {e.name}
-                {me ? <span className="ml-1.5 text-[11px] font-extrabold uppercase tracking-wide text-brand-700">you</span> : null}
+                {me ? <span className="ml-1 text-[10px] font-extrabold uppercase tracking-wide text-brand-700">you</span> : null}
               </span>
               {showDelta ? <Movement delta={e.delta} /> : null}
               {showLast && e.lastPoints ? (
-                <span className={`hidden w-14 text-right text-sm font-bold tabular sm:inline-block ${e.lastPoints > 0 ? "text-good" : "text-bad"}`}>{signed(e.lastPoints)}</span>
+                <span className={`hidden w-12 text-right text-sm font-bold tabular md:inline-block ${e.lastPoints > 0 ? "text-good" : "text-bad"}`}>{signed(e.lastPoints)}</span>
               ) : showLast ? (
-                <span className="hidden w-14 sm:inline-block" />
+                <span className="hidden w-12 md:inline-block" />
               ) : null}
               <span className="min-w-[3.5ch] text-right text-base font-extrabold tabular">{e.score}</span>
             </motion.li>
