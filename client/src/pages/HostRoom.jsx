@@ -11,7 +11,9 @@ import { request, socket, useSocketEvents } from "../lib/socket.js";
 import { hostSeat } from "../lib/storage.js";
 import { downloadCsv, joinUrl, seconds, topicLabel } from "../lib/format.js";
 
-export default function HostRoom() {
+const AUTO_NEXT_SECONDS = 8;
+
+export default function HostRoom({ spectator = false }) {
   const { code } = useParams();
   const seat = useMemo(() => hostSeat.get(code), [code]);
   const [phase, setPhase] = useState("loading");
@@ -23,6 +25,7 @@ export default function HostRoom() {
   const [flags, setFlags] = useState({});
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [autoNext, setAutoNext] = useState(false);
 
   const applyState = useCallback((state) => {
     if (state.lobby) setLobby(state.lobby);
@@ -36,8 +39,18 @@ export default function HostRoom() {
   }, []);
 
   const resume = useCallback(async () => {
+    if (spectator) {
+      const res = await request("spectator:join", { code });
+      if (!res.ok) {
+        setError(res.error || "Room not found. It may have ended.");
+        setPhase("error");
+        return;
+      }
+      applyState(res.state);
+      return;
+    }
     if (!seat?.hostToken) {
-      setError("This browser is not the host of this room. Open the room on the device that created it.");
+      setError("This browser is not the host of this room. Open the room on the device that created it, or use the projector view.");
       setPhase("error");
       return;
     }
@@ -48,7 +61,7 @@ export default function HostRoom() {
       return;
     }
     applyState(res.state);
-  }, [code, seat, applyState]);
+  }, [code, seat, spectator, applyState]);
 
   useEffect(() => {
     resume();
@@ -75,26 +88,40 @@ export default function HostRoom() {
         setPhase("ended");
       },
       "player:flag": (f) => setFlags((prev) => ({ ...prev, [f.id]: f.tabSwitches })),
+      "room:closed": () => {
+        setError("This room has closed.");
+        setPhase("error");
+      },
     },
     [code],
   );
 
-  const act = async (event) => {
-    setBusy(true);
-    const res = await request(event, { code, hostToken: seat?.hostToken });
-    setBusy(false);
-    if (!res.ok) setError(res.error || "That did not work");
-  };
+  const act = useCallback(
+    async (event, extra = {}) => {
+      if (spectator) return;
+      setBusy(true);
+      const res = await request(event, { code, hostToken: seat?.hostToken, ...extra });
+      setBusy(false);
+      if (!res.ok) setError(res.error || "That did not work");
+    },
+    [code, seat, spectator],
+  );
 
   useEffect(() => {
+    if (spectator) return undefined;
     const onKey = (e) => {
       if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
       if (phase === "reveal" && (e.key === "Enter" || e.key === "ArrowRight")) act("host:next");
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, code]);
+  }, [phase, act, spectator]);
+
+  useEffect(() => {
+    if (spectator || !autoNext || phase !== "reveal") return undefined;
+    const id = setTimeout(() => act("host:next"), AUTO_NEXT_SECONDS * 1000);
+    return () => clearTimeout(id);
+  }, [autoNext, phase, reveal, act, spectator]);
 
   const endGame = () => {
     if (window.confirm("End the game now and show results?")) act("host:end");
@@ -112,29 +139,43 @@ export default function HostRoom() {
     return (
       <Shell wide>
         <Banner tone="bad">{error}</Banner>
-        <Link to="/host" className="mt-4 inline-block">
-          <Button variant="secondary">Host a new game</Button>
-        </Link>
+        <div className="mt-4 flex gap-2">
+          <Link to="/host">
+            <Button variant="secondary">Host a new game</Button>
+          </Link>
+          {!spectator ? (
+            <Link to={`/watch/${code}`}>
+              <Button variant="ghost">Open projector view</Button>
+            </Link>
+          ) : null}
+        </div>
       </Shell>
     );
   }
 
   return (
     <Shell wide nav={false}>
+      {spectator ? (
+        <p className="mb-4 text-center text-xs font-semibold uppercase tracking-wide text-muted">Projector view, room {code}</p>
+      ) : null}
       {error ? (
         <Banner tone="bad" className="mb-4">
           {error}
         </Banner>
       ) : null}
-      {phase === "lobby" && lobby ? <LobbyView lobby={lobby} code={code} onStart={() => act("host:start")} onKick={(id) => request("host:kick", { code, hostToken: seat.hostToken, playerId: id })} busy={busy} /> : null}
-      {phase === "question" && question ? <QuestionView question={question} progress={progress} onClose={() => act("host:next")} busy={busy} /> : null}
-      {phase === "reveal" && reveal ? <RevealView reveal={reveal} flags={flags} onNext={() => act("host:next")} onEnd={endGame} busy={busy} /> : null}
-      {phase === "ended" && end ? <EndView end={end} flags={flags} code={code} /> : null}
+      {phase === "lobby" && lobby ? (
+        <LobbyView lobby={lobby} code={code} spectator={spectator} onStart={() => act("host:start")} onKick={(id) => act("host:kick", { playerId: id })} busy={busy} />
+      ) : null}
+      {phase === "question" && question ? <QuestionView question={question} progress={progress} spectator={spectator} onClose={() => act("host:next")} busy={busy} /> : null}
+      {phase === "reveal" && reveal ? (
+        <RevealView reveal={reveal} flags={flags} spectator={spectator} autoNext={autoNext} onAutoNext={setAutoNext} onNext={() => act("host:next")} onEnd={endGame} busy={busy} />
+      ) : null}
+      {phase === "ended" && end ? <EndView end={end} flags={flags} code={code} spectator={spectator} /> : null}
     </Shell>
   );
 }
 
-function LobbyView({ lobby, code, onStart, onKick, busy }) {
+function LobbyView({ lobby, code, spectator, onStart, onKick, busy }) {
   const url = joinUrl(code);
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
@@ -149,7 +190,9 @@ function LobbyView({ lobby, code, onStart, onKick, busy }) {
         <div className="mt-2 rounded-2xl border border-line bg-white p-3 shadow-sm">
           <QRCodeSVG value={url} size={200} aria-label="QR code to join" />
         </div>
-        <p className="mt-4 text-sm text-muted">{lobby.setTitle} / {lobby.questionCount} questions / {lobby.settings.questionTime} s each</p>
+        <p className="mt-4 text-sm text-muted">
+          {lobby.setTitle} / {lobby.questionCount} questions / {lobby.settings.questionTime} s each
+        </p>
         <p className="mt-1 text-xs text-muted">{lobby.scoring.text}</p>
         {lobby.settings.examMode ? (
           <Badge tone="warm" className="mt-2">
@@ -158,13 +201,15 @@ function LobbyView({ lobby, code, onStart, onKick, busy }) {
         ) : null}
       </Card>
       <Card>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3">
           <h1 className="text-2xl font-extrabold">
             {lobby.players.length} {lobby.players.length === 1 ? "player" : "players"} in
           </h1>
-          <Button size="lg" onClick={onStart} disabled={busy || lobby.players.length === 0}>
-            Start game
-          </Button>
+          {!spectator ? (
+            <Button size="lg" onClick={onStart} disabled={busy || lobby.players.length === 0}>
+              Start game
+            </Button>
+          ) : null}
         </div>
         <p className="mt-1 text-sm text-muted">{lobby.college}. Names appear here the moment someone joins.</p>
         {lobby.players.length === 0 ? (
@@ -172,22 +217,29 @@ function LobbyView({ lobby, code, onStart, onKick, busy }) {
         ) : (
           <ul className="mt-5 flex flex-wrap gap-2" aria-label="Players">
             {lobby.players.map((p) => (
-              <li key={p.id} className={`group flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold ${p.connected ? "border-line bg-surface" : "border-dashed border-line text-muted"}`}>
+              <li key={p.id} className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold ${p.connected ? "border-line bg-surface" : "border-dashed border-line text-muted"}`}>
                 {p.name}
                 {!p.connected ? <span className="text-xs font-normal">(away)</span> : null}
-                <button type="button" onClick={() => onKick(p.id)} className="ml-1 rounded-full px-1 text-xs text-muted hover:bg-bad-bg hover:text-bad" aria-label={`Remove ${p.name}`}>
-                  &#10005;
-                </button>
+                {!spectator ? (
+                  <button type="button" onClick={() => onKick(p.id)} className="ml-1 rounded-full px-1 text-xs text-muted hover:bg-bad-bg hover:text-bad" aria-label={`Remove ${p.name}`}>
+                    &#10005;
+                  </button>
+                ) : null}
               </li>
             ))}
           </ul>
         )}
+        {!spectator ? (
+          <p className="mt-6 text-xs text-muted">
+            Second screen? Open <span className="font-semibold text-ink">{`${window.location.host}/watch/${code}`}</span> on the projector. It follows the game without host controls.
+          </p>
+        ) : null}
       </Card>
     </div>
   );
 }
 
-function QuestionView({ question, progress, onClose, busy }) {
+function QuestionView({ question, progress, spectator, onClose, busy }) {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -211,16 +263,18 @@ function QuestionView({ question, progress, onClose, busy }) {
           <OptionTile key={i} index={i} text={opt} size="lg" />
         ))}
       </div>
-      <div className="flex justify-end">
-        <Button variant="secondary" onClick={onClose} disabled={busy}>
-          End round now
-        </Button>
-      </div>
+      {!spectator ? (
+        <div className="flex justify-end">
+          <Button variant="secondary" onClick={onClose} disabled={busy}>
+            End round now
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 }
 
-function RevealView({ reveal, flags, onNext, onEnd, busy }) {
+function RevealView({ reveal, flags, spectator, autoNext, onAutoNext, onNext, onEnd, busy }) {
   const flagged = reveal.leaderboard.filter((p) => flags[p.id]);
   return (
     <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
@@ -247,20 +301,24 @@ function RevealView({ reveal, flags, onNext, onEnd, busy }) {
             <p className="mt-1 text-base">{reveal.explanation}</p>
           </Card>
         ) : null}
-        {flagged.length ? (
-          <Banner tone="warm">
-            Left the tab during a question: {flagged.map((p) => `${p.name} (${flags[p.id]})`).join(", ")}
-          </Banner>
-        ) : null}
-        <div className="flex flex-wrap items-center justify-end gap-3">
-          <span className="mr-auto text-xs text-muted">Enter key also moves on</span>
-          <Button variant="ghost" onClick={onEnd} disabled={busy}>
-            End game
-          </Button>
-          <Button size="lg" onClick={onNext} disabled={busy}>
-            {reveal.isLast ? "Show final results" : "Next question"}
-          </Button>
-        </div>
+        {flagged.length && !spectator ? <Banner tone="warm">Left the tab during a question: {flagged.map((p) => `${p.name} (${flags[p.id]})`).join(", ")}</Banner> : null}
+        {!spectator ? (
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <label className="mr-auto flex cursor-pointer items-center gap-2 text-xs text-muted">
+              <input type="checkbox" className="h-4 w-4 accent-brand-700" checked={autoNext} onChange={(e) => onAutoNext(e.target.checked)} />
+              Auto next after {AUTO_NEXT_SECONDS} s
+            </label>
+            <span className="text-xs text-muted">Enter key also moves on</span>
+            <Button variant="ghost" onClick={onEnd} disabled={busy}>
+              End game
+            </Button>
+            <Button size="lg" onClick={onNext} disabled={busy}>
+              {reveal.isLast ? "Show final results" : "Next question"}
+            </Button>
+          </div>
+        ) : (
+          <p className="text-right text-sm text-muted">{reveal.isLast ? "Final results coming up" : "Next question coming up"}</p>
+        )}
       </div>
       <Card>
         <h2 className="text-xl font-extrabold">Leaderboard</h2>
@@ -271,7 +329,7 @@ function RevealView({ reveal, flags, onNext, onEnd, busy }) {
   );
 }
 
-function EndView({ end, flags, code }) {
+function EndView({ end, flags, code, spectator }) {
   const [tab, setTab] = useState("questions");
   const board = end.leaderboard;
   const insights = end.insights;
@@ -279,7 +337,7 @@ function EndView({ end, flags, code }) {
 
   const exportCsv = () => {
     const rows = [["Rank", "Name", "Score", "Correct", "Wrong", "Skipped", "Accuracy %", "Avg speed (s)", "Tab switches"]];
-    for (const p of insights.players) rows.push([p.rank, p.name, p.score, p.correct, p.wrong, p.skipped, p.accuracy, p.avgSpeedS ?? "", flags[p.id] ?? p.tabSwitches ?? 0]);
+    for (const p of insights.players) rows.push([p.rank, p.name, p.score, p.correct, p.wrong, p.skipped, p.accuracy, p.avgSpeedS ?? "", p.tabSwitches ?? 0]);
     rows.push([]);
     rows.push(["Question", "Topic", "Difficulty", "Correct %", "Avg time (s)", "Correct option", "Answers per option"]);
     for (const q of insights.questions) rows.push([q.text, q.topic, q.difficulty, q.pctCorrect, q.avgElapsedMs ? (q.avgElapsedMs / 1000).toFixed(1) : "", q.options[q.correct], q.counts.join(" | ")]);
@@ -290,17 +348,21 @@ function EndView({ end, flags, code }) {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-muted">{insights.setTitle} / {insights.college}</p>
+          <p className="text-sm font-semibold uppercase tracking-wide text-muted">
+            {insights.setTitle} / {insights.college}
+          </p>
           <h1 className="text-3xl font-extrabold">Final results</h1>
         </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" onClick={exportCsv}>
-            Export CSV
-          </Button>
-          <Link to="/host">
-            <Button>Host another game</Button>
-          </Link>
-        </div>
+        {!spectator ? (
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={exportCsv}>
+              Export CSV
+            </Button>
+            <Link to="/host">
+              <Button>Host another game</Button>
+            </Link>
+          </div>
+        ) : null}
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
@@ -380,7 +442,7 @@ function EndView({ end, flags, code }) {
                         <td className="py-2 pr-3 tabular">{p.score}</td>
                         <td className="py-2 pr-3 tabular">{p.accuracy}%</td>
                         <td className="py-2 pr-3 tabular">{p.avgSpeedS ?? "-"} s</td>
-                        <td className="py-2 pr-3 tabular">{p.tabSwitches || 0}</td>
+                        <td className="py-2 pr-3 tabular">{flags[p.id] ?? p.tabSwitches ?? 0}</td>
                       </tr>
                     ))}
                   </tbody>

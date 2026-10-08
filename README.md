@@ -31,21 +31,21 @@ AptiQuiz turns aptitude practice into a live game. A host creates a room from a 
 - College league across rooms, by week, month or all time.
 - Server as referee, latency compensation, reconnection with the same score, cheating resistance (details below).
 - 50-player simulation script, results below.
+- Projector view at `/watch/CODE`: a read-only second screen that follows the game, so the host laptop can stay private.
+- Optional auto-advance for the host, 8 seconds after each reveal.
 - Mobile-first layout, keyboard answering (keys 1 to 4), labelled controls, colour plus icon for every status.
 
 **Left**
 - Persist league and question sets in Postgres instead of JSON files, so data survives redeploys.
 - Team battles and a daily challenge with streaks.
-- Spectator mode for a projector that shows the leaderboard without host controls.
 - Power-ups with per-game limits.
 - Sound cues with an on/off toggle.
 
 **Plan for the next 16 hours**
 1. Deploy, test on three phones on venue Wi-Fi, fix anything that feels slow.
 2. Postgres adapter behind `store.js`, keeping the same interface.
-3. Spectator route reusing the host components in read-only mode.
-4. Team battles: a team field at join time and a combined-score table.
-5. Final pass on accessibility (screen reader labels on the reveal) and a recorded demo as a backup.
+3. Team battles: a team field at join time and a combined-score table.
+4. Final pass on accessibility (screen reader labels on the reveal) and a recorded demo as a backup.
 
 ## Architecture and why
 
@@ -73,6 +73,7 @@ The full design, with the life of a round and the reasoning behind each choice, 
 - **Fairness panel.** Measured connection delays and the count of rejected late, duplicate and invalid answers, visible to the host after every game.
 - **Explanations on the reveal.** Every built-in question carries a one-line explanation that appears on every screen when the answer is revealed.
 - **Tab-switch flags.** The host sees who left the page during a question.
+- **Projector view.** `/watch/CODE` mirrors the host screen without controls, for a second display at college events.
 
 ## How to run it
 

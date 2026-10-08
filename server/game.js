@@ -138,8 +138,18 @@ export class GameManager {
     room.hostSocketId = socket.id;
     this.bySocket.set(socket.id, { code: room.code, role: "host" });
     socket.join(room.code);
-    socket.join(`${room.code}:host`);
     room.lastActivity = Date.now();
+  }
+
+  attachSpectator(room, socket) {
+    this.bySocket.set(socket.id, { code: room.code, role: "spectator" });
+    socket.join(room.code);
+    socket.join(`${room.code}:watch`);
+  }
+
+  emitToScreens(room, event, payload) {
+    if (room.hostSocketId) this.io.to(room.hostSocketId).emit(event, payload);
+    this.io.to(`${room.code}:watch`).emit(event, payload);
   }
 
   uniqueName(room, name) {
@@ -216,6 +226,7 @@ export class GameManager {
       if (room.hostSocketId === socketId) room.hostSocketId = null;
       return;
     }
+    if (ref.role === "spectator") return;
     const player = room.players.get(ref.playerId);
     if (!player || player.socketId !== socketId) return;
     player.connected = false;
@@ -280,7 +291,7 @@ export class GameManager {
         this.io.to(player.socketId).emit("question:start", this.playerQuestionPayload(room, player));
       }
     }
-    if (room.hostSocketId) this.io.to(room.hostSocketId).emit("question:start", this.hostQuestionPayload(room));
+    this.emitToScreens(room, "question:start", this.hostQuestionPayload(room));
   }
 
   baseQuestionPayload(room) {
@@ -503,7 +514,7 @@ export class GameManager {
     for (const player of room.players.values()) {
       if (player.connected && player.socketId) this.io.to(player.socketId).emit("question:reveal", this.playerRevealPayload(room, player));
     }
-    if (room.hostSocketId) this.io.to(room.hostSocketId).emit("question:reveal", this.hostRevealPayload(room));
+    this.emitToScreens(room, "question:reveal", this.hostRevealPayload(room));
   }
 
   nextQuestion(room) {
@@ -655,7 +666,7 @@ export class GameManager {
     for (const player of room.players.values()) {
       if (player.connected && player.socketId) this.io.to(player.socketId).emit("game:end", this.playerEndPayload(room, player));
     }
-    if (room.hostSocketId) this.io.to(room.hostSocketId).emit("game:end", this.hostEndPayload(room, insights));
+    this.emitToScreens(room, "game:end", this.hostEndPayload(room, insights));
   }
 
   playerEndPayload(room, player) {

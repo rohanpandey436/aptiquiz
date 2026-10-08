@@ -24,6 +24,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/host" element={<HostCreate />} />
         <Route path="/host/:code" element={<HostRoom />} />
+        <Route path="/watch/:code" element={<HostRoom spectator />} />
         <Route path="/play" element={<Play />} />
         <Route path="/play/:code" element={<Play />} />
         <Route path="/league" element={<League />} />

@@ -89,6 +89,13 @@ export function attachSockets(io, game) {
       reply(ack, { ok: game.kickPlayer(room, cleanId(payload?.playerId)) });
     });
 
+    socket.on("spectator:join", (payload, ack) => {
+      const room = game.getRoom(cleanCode(payload?.code));
+      if (!room) return reply(ack, { ok: false, error: "Room not found" });
+      game.attachSpectator(room, socket);
+      reply(ack, { ok: true, code: room.code, state: game.statePayloadForHost(room) });
+    });
+
     socket.on("player:join", (payload, ack) => {
       const code = cleanCode(payload?.code);
       const name = cleanName(payload?.name);
