@@ -13,7 +13,7 @@ import { Countdown, LEVEL_CHOICES, TIME_CHOICES, Toggle } from "../components/Ro
 import { api } from "../lib/api.js";
 import { request, socket, useSocketEvents } from "../lib/socket.js";
 import { hostSeat } from "../lib/storage.js";
-import { downloadCsv, joinUrl, seconds, topicLabel } from "../lib/format.js";
+import { LETTERS, downloadCsv, joinUrl, seconds, topicLabel } from "../lib/format.js";
 
 const withAutoNext = (reveal) => ({ ...reveal, autoNextAt: typeof reveal.autoNextMs === "number" ? Date.now() + reveal.autoNextMs : null });
 
@@ -27,6 +27,7 @@ export default function HostRoom({ spectator = false }) {
   const [reveal, setReveal] = useState(null);
   const [end, setEnd] = useState(null);
   const [flags, setFlags] = useState({});
+  const [standings, setStandings] = useState([]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const inflight = useRef(false);
@@ -36,8 +37,12 @@ export default function HostRoom({ spectator = false }) {
     if (state.status === "question") {
       setQuestion({ ...state.question, endsAt: Date.now() + state.question.remainingMs });
       setProgress({ answeredCount: state.question.answeredCount, playerCount: state.question.playerCount });
+      if (state.question.leaderboard) setStandings(state.question.leaderboard);
     }
-    if (state.status === "reveal") setReveal(withAutoNext(state.reveal));
+    if (state.status === "reveal") {
+      setReveal(withAutoNext(state.reveal));
+      setStandings(state.reveal.leaderboard || []);
+    }
     if (state.status === "ended") setEnd(state.end);
     setPhase(state.status);
   }, []);
@@ -84,6 +89,7 @@ export default function HostRoom({ spectator = false }) {
       "question:start": (q) => {
         setQuestion({ ...q, endsAt: Date.now() + q.remainingMs });
         setProgress({ answeredCount: q.answeredCount, playerCount: q.playerCount });
+        if (q.leaderboard) setStandings(q.leaderboard);
         setReveal(null);
         setError("");
         setPhase("question");
@@ -91,6 +97,7 @@ export default function HostRoom({ spectator = false }) {
       "question:progress": (p) => setProgress({ answeredCount: p.answeredCount, playerCount: p.playerCount }),
       "question:reveal": (r) => {
         setReveal(withAutoNext(r));
+        setStandings(r.leaderboard || []);
         setPhase("reveal");
       },
       "room:auto": (a) => setReveal((prev) => (prev ? withAutoNext({ ...prev, autoAdvance: a.autoAdvance, autoNextMs: a.autoNextMs }) : prev)),
@@ -178,10 +185,23 @@ export default function HostRoom({ spectator = false }) {
       {phase === "lobby" && lobby ? (
         <LobbyView lobby={lobby} code={code} spectator={spectator} busy={busy} onStart={() => act("host:start")} onKick={(id) => act("host:kick", { playerId: id })} onUpdate={(patch) => act("host:update", patch)} />
       ) : null}
-      {phase === "question" && question ? <QuestionView question={question} progress={progress} spectator={spectator} busy={busy} onClose={() => act("host:close")} /> : null}
-      {phase === "reveal" && reveal ? (
-        <RevealView reveal={reveal} flags={flags} spectator={spectator} busy={busy} onNext={() => act("host:next")} onAuto={(enabled) => act("host:auto", { enabled })} onEnd={endGame} />
+      {!spectator && ((phase === "question" && question) || (phase === "reveal" && reveal)) ? (
+        <ControlRoom
+          phase={phase}
+          question={question}
+          reveal={reveal}
+          progress={progress}
+          standings={standings}
+          flags={flags}
+          busy={busy}
+          onClose={() => act("host:close")}
+          onNext={() => act("host:next")}
+          onAuto={(enabled) => act("host:auto", { enabled })}
+          onEnd={endGame}
+        />
       ) : null}
+      {spectator && phase === "question" && question ? <QuestionView question={question} progress={progress} /> : null}
+      {spectator && phase === "reveal" && reveal ? <RevealView reveal={reveal} /> : null}
       {phase === "ended" && end ? <EndView end={end} code={code} spectator={spectator} /> : null}
     </Shell>
   );
@@ -211,6 +231,7 @@ function CodeBlock({ code, lobby }) {
         <p className="mt-1 text-xs text-onblue">{lobby.scoring.text}</p>
         <div className="mt-3 flex flex-wrap justify-center gap-2">
           {lobby.settings.examMode ? <Badge tone="accent">Exam mode: negative marking</Badge> : null}
+          {lobby.setAi ? <Badge tone="white">Questions written by AI</Badge> : null}
           <Badge tone="white">{lobby.settings.autoAdvance ? "Auto-advance on" : "Host advances manually"}</Badge>
         </div>
       </div>
@@ -329,7 +350,124 @@ function SettingsPanel({ lobby, onUpdate, busy }) {
   );
 }
 
-function QuestionView({ question, progress, spectator, busy, onClose }) {
+function StatusStrip({ phase, q, reveal, progress, standings }) {
+  const connected = standings.filter((p) => p.connected !== false).length;
+  const away = standings.length - connected;
+  const pct = progress.playerCount ? Math.round((100 * progress.answeredCount) / progress.playerCount) : 0;
+  return (
+    <div className="grid gap-3 sm:grid-cols-3">
+      <Stat label="Question" value={`${q.qIndex + 1} of ${q.total}`} sub={`${topicLabel(q.topic)} / ${q.difficulty}`} />
+      {phase === "question" ? (
+        <Stat
+          label="Answered"
+          value={`${progress.answeredCount} of ${progress.playerCount}`}
+          tone="brand"
+          sub={
+            <span className="mt-1 block h-1.5 w-full overflow-hidden rounded-full bg-line" aria-hidden="true">
+              <span className="block h-full rounded-full bg-brand-600" style={{ width: `${pct}%`, transition: "width 300ms" }} />
+            </span>
+          }
+        />
+      ) : (
+        <Stat label="Correct" value={`${reveal.correctCount} of ${reveal.playerCount}`} tone="good" sub={`${reveal.answered} answered`} />
+      )}
+      {phase === "question" ? (
+        <Stat label="Players" value={connected} sub={away ? `${away} away right now` : "all connected"} />
+      ) : (
+        <Stat label="Average time" value={seconds(reveal.avgElapsedMs)} sub="after network compensation" />
+      )}
+    </div>
+  );
+}
+
+function OptionRows({ options, reveal }) {
+  return (
+    <ol className="mt-3 grid gap-1.5 sm:grid-cols-2" aria-label="Options">
+      {options.map((opt, i) => {
+        const correct = !!reveal && i === reveal.correct;
+        const count = reveal ? reveal.counts[i] : null;
+        const share = reveal && reveal.answered ? Math.round((100 * count) / reveal.answered) : 0;
+        return (
+          <li key={i} className={`relative overflow-hidden rounded-xl border px-3 py-2 text-sm ${correct ? "border-good bg-good-bg font-bold text-good-ink" : "border-line bg-card"}`}>
+            {reveal ? <span aria-hidden="true" className={`absolute inset-y-0 left-0 ${correct ? "bg-good/15" : "bg-surface-2"}`} style={{ width: `${share}%` }} /> : null}
+            <span className="relative flex items-center gap-2">
+              <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-xs font-extrabold ${correct ? "bg-good text-white" : "bg-surface-2 text-muted"}`}>{LETTERS[i]}</span>
+              <span className="min-w-0 flex-1 truncate">{opt}</span>
+              {reveal ? (
+                <span className="shrink-0 text-xs font-bold tabular text-muted">
+                  {count} ({share}%)
+                </span>
+              ) : null}
+            </span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+function ControlRoom({ phase, question, reveal, progress, standings, flags, busy, onClose, onNext, onAuto, onEnd }) {
+  const q = phase === "question" ? question : reveal;
+  const flagged = phase === "reveal" ? standings.filter((p) => flags[p.id]) : [];
+  return (
+    <div className="grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
+      <div className="flex flex-col gap-4">
+        <StatusStrip phase={phase} q={q} reveal={reveal} progress={progress} standings={standings} />
+        {phase === "question" ? <Timer endsAt={question.endsAt} durationMs={question.durationMs} /> : null}
+        <Card className="border-l-4 border-l-brand-700">
+          <QuestionBody text={q.text} table={q.table} image={q.image} size="md" />
+          <OptionRows options={q.options} reveal={phase === "reveal" ? reveal : null} />
+        </Card>
+        {phase === "reveal" && reveal.explanation ? (
+          <div className="rounded-card border-2 border-accent/40 bg-accent-soft p-4">
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-warm">Why</p>
+            <p className="mt-1 text-sm text-ink">{reveal.explanation}</p>
+          </div>
+        ) : null}
+        {flagged.length ? <Banner tone="warm">Left the tab during a question: {flagged.map((p) => `${p.name} (${flags[p.id]})`).join(", ")}</Banner> : null}
+        {phase === "question" ? (
+          <div className="flex flex-col gap-2">
+            <Button variant="accent" size="lg" onClick={onClose} disabled={busy} className="w-full py-5 text-lg">
+              End round now
+            </Button>
+            <p className="text-center text-xs text-muted">Closes the question for everyone and shows the answer. The round also ends on its own when the timer runs out or everyone has answered.</p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3 rounded-card border border-line bg-surface p-4">
+            <Button size="lg" onClick={onNext} disabled={busy} className="w-full py-5 text-lg">
+              {reveal.isLast ? "Show final results" : "Next question"}
+            </Button>
+            <div className="flex flex-wrap items-center justify-between gap-3 text-sm font-bold text-muted">
+              {reveal.autoAdvance && reveal.autoNextAt ? <Countdown endsAt={reveal.autoNextAt} prefix={reveal.isLast ? "Results in" : "Next question in"} className="text-ink" /> : <span>Auto-advance paused</span>}
+              <span className="flex items-center gap-2">
+                <button type="button" onClick={() => onAuto(!reveal.autoAdvance)} className="rounded-full border border-line bg-card px-3 py-1 text-xs font-bold text-brand-ink hover:bg-brand-50" disabled={busy}>
+                  {reveal.autoAdvance ? "Pause" : "Resume auto"}
+                </button>
+                <Button variant="ghost" size="sm" onClick={onEnd} disabled={busy}>
+                  End game
+                </Button>
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+      <Card className="lg:sticky lg:top-20 lg:self-start">
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="display text-xl font-bold">Live standings</h2>
+          <span className="text-xs font-bold text-muted">{phase === "reveal" ? "Just updated" : q.qIndex ? `After question ${q.qIndex}` : "Before the first question"}</span>
+        </div>
+        <p className="mb-3 text-xs text-muted">
+          {standings.length} {standings.length === 1 ? "player" : "players"}. Arrows show who moved.
+        </p>
+        <div className="max-h-[70vh] overflow-auto pr-1">
+          <Leaderboard entries={standings} limit={60} dense />
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+function QuestionView({ question, progress }) {
   const pct = progress.playerCount ? Math.round((100 * progress.answeredCount) / progress.playerCount) : 0;
   return (
     <div className="flex flex-col gap-5">
@@ -359,20 +497,11 @@ function QuestionView({ question, progress, spectator, busy, onClose }) {
           <OptionTile key={`${question.qIndex}-${i}`} index={i} text={opt} size="lg" delay={i * 70} />
         ))}
       </div>
-      {!spectator ? (
-        <div className="flex justify-end">
-          <Button variant="secondary" onClick={onClose} disabled={busy}>
-            End round now
-          </Button>
-        </div>
-      ) : null}
     </div>
   );
 }
 
-function RevealView({ reveal, flags, spectator, busy, onNext, onAuto, onEnd }) {
-  const flagged = reveal.leaderboard.filter((p) => flags[p.id]);
-  const nextLabel = reveal.isLast ? "Show final results" : "Next question";
+function RevealView({ reveal }) {
   return (
     <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
       <div className="flex flex-col gap-4">
@@ -399,31 +528,9 @@ function RevealView({ reveal, flags, spectator, busy, onNext, onAuto, onEnd }) {
             <p className="mt-1 text-base text-ink">{reveal.explanation}</p>
           </div>
         ) : null}
-        {flagged.length && !spectator ? <Banner tone="warm">Left the tab during a question: {flagged.map((p) => `${p.name} (${flags[p.id]})`).join(", ")}</Banner> : null}
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-line bg-surface px-4 py-3">
-          <div className="flex items-center gap-3 text-sm font-bold text-muted">
-            {reveal.autoAdvance && reveal.autoNextAt ? (
-              <Countdown endsAt={reveal.autoNextAt} prefix={reveal.isLast ? "Results in" : "Next question in"} className="text-ink" />
-            ) : (
-              <span>{spectator ? "Waiting for the host" : "Auto-advance paused"}</span>
-            )}
-            {!spectator ? (
-              <button type="button" onClick={() => onAuto(!reveal.autoAdvance)} className="rounded-full border border-line bg-card px-3 py-1 text-xs font-bold text-brand-ink hover:bg-brand-50" disabled={busy}>
-                {reveal.autoAdvance ? "Pause" : "Resume auto"}
-              </button>
-            ) : null}
-          </div>
-          {!spectator ? (
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" onClick={onEnd} disabled={busy}>
-                End game
-              </Button>
-              <Button size="lg" onClick={onNext} disabled={busy}>
-                {nextLabel}
-              </Button>
-            </div>
-          ) : null}
-        </div>
+        <p className="rounded-card border border-line bg-surface px-4 py-3 text-sm font-bold text-muted">
+          {reveal.autoAdvance && reveal.autoNextAt ? <Countdown endsAt={reveal.autoNextAt} prefix={reveal.isLast ? "Results in" : "Next question in"} className="text-ink" /> : "Waiting for the host"}
+        </p>
       </div>
       <Card className="animate-rise">
         <h2 className="display text-2xl font-bold">Live standings</h2>

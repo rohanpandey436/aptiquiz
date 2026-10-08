@@ -82,6 +82,7 @@ export class GameManager {
       college: college || "Lloyd Institute",
       setId: set.id,
       setTitle: set.title,
+      setAi: !!set.ai,
       questions: picked.questions,
       settings: {
         questionTime: questionTime || set.questionTime || 20,
@@ -119,6 +120,7 @@ export class GameManager {
       if (!picked.questions.length) return { error: `This set has no ${picked.level} questions. Pick another level.` };
       room.setId = set.id;
       room.setTitle = set.title;
+      room.setAi = !!set.ai;
       room.questions = picked.questions;
       room.settings.difficulty = picked.level;
       if (wantsSet && !questionTime) room.settings.questionTime = set.questionTime || 20;
@@ -159,6 +161,7 @@ export class GameManager {
       status: room.status,
       setId: room.setId,
       setTitle: room.setTitle,
+      setAi: !!room.setAi,
       questionCount: room.questions.length,
       settings: room.settings,
       practice: room.practice,
@@ -407,6 +410,7 @@ export class GameManager {
       options: question.options.slice(),
       answeredCount: room.q.answers.size,
       playerCount: this.connectedCount(room),
+      leaderboard: this.standings(room),
     };
   }
 
@@ -475,7 +479,7 @@ export class GameManager {
     }, ALL_ANSWERED_DELAY_MS);
   }
 
-  computeRanks(room) {
+  sortPlayers(room) {
     const list = [...room.players.values()];
     list.sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
@@ -484,11 +488,29 @@ export class GameManager {
       if (ta !== tb) return ta - tb;
       return a.name.localeCompare(b.name);
     });
+    return list;
+  }
+
+  computeRanks(room) {
+    const list = this.sortPlayers(room);
     list.forEach((p, i) => {
       p.rank = i + 1;
       if (!p.prevRank) p.prevRank = p.rank;
     });
     return list;
+  }
+
+  standings(room) {
+    return this.sortPlayers(room).map((p, i) => ({
+      id: p.id,
+      name: p.name,
+      score: p.score,
+      rank: i + 1,
+      prevRank: p.prevRank || i + 1,
+      delta: p.prevRank ? p.prevRank - (i + 1) : 0,
+      lastPoints: p.lastPoints || 0,
+      connected: p.connected,
+    }));
   }
 
   leaderboard(room) {
@@ -601,6 +623,7 @@ export class GameManager {
       text: question.text,
       explanation: question.explanation || "",
       topic: question.topic,
+      difficulty: question.difficulty,
       answered: round.answered,
       correctCount: round.correctCount,
       playerCount: room.players.size,
