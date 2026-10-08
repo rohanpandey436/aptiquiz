@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Shell } from "../components/Layout.jsx";
 import { Badge, Banner, Button, Card, Field, Segmented, Spinner, inputClass } from "../components/ui.jsx";
@@ -28,6 +28,12 @@ export default function HostCreate() {
   const [autoAdvance, setAutoAdvance] = useState(true);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const settingsRef = useRef(null);
+
+  const chooseSet = (id) => {
+    setSetId(id);
+    requestAnimationFrame(() => settingsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
 
   const loadSets = () => {
     setError("");
@@ -110,7 +116,7 @@ export default function HostCreate() {
                         key={s.id}
                         role="radio"
                         aria-checked={active}
-                        onClick={() => setSetId(s.id)}
+                        onClick={() => chooseSet(s.id)}
                         className={`press rounded-tile border-2 p-4 text-left ${active ? "border-brand-700 bg-brand-50 shadow-card" : "border-line hover:border-brand-200"}`}
                       >
                         <div className="flex items-start justify-between gap-2">
@@ -168,7 +174,7 @@ export default function HostCreate() {
             )}
           </Card>
 
-          <Card className="grid gap-5 sm:grid-cols-2">
+          <Card ref={settingsRef} className="grid scroll-mt-20 gap-5 sm:grid-cols-2">
             <Field id="college" label="College" hint="Scores from this room count towards this college in the league.">
               <input id="college" className={inputClass} value={college} onChange={(e) => setCollege(e.target.value)} maxLength={60} required />
             </Field>

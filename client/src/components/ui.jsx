@@ -1,3 +1,5 @@
+import { forwardRef } from "react";
+
 const buttonStyles = {
   primary:
     "btn-sweep bg-brand-gradient text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_10px_22px_-10px_rgba(29,78,216,0.7)] hover:-translate-y-0.5 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_14px_26px_-10px_rgba(29,78,216,0.75)] active:translate-y-0 active:scale-[0.985] active:shadow-none disabled:bg-none disabled:bg-brand-200 disabled:shadow-none disabled:hover:translate-y-0",
@@ -28,13 +30,13 @@ export function Button({ variant = "primary", size = "md", className = "", type 
   );
 }
 
-export function Card({ className = "", children, as: Tag = "div", ...props }) {
+export const Card = forwardRef(function Card({ className = "", children, as: Tag = "div", ...props }, ref) {
   return (
-    <Tag className={`rounded-2xl border border-line bg-card p-5 shadow-card md:rounded-card ${className}`} {...props}>
+    <Tag ref={ref} className={`rounded-2xl border border-line bg-card p-5 shadow-card md:rounded-card ${className}`} {...props}>
       {children}
     </Tag>
   );
-}
+});
 
 const badgeTones = {
   neutral: "bg-surface-2 text-muted border-transparent",

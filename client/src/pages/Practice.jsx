@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Shell } from "../components/Layout.jsx";
 import { Badge, Banner, Button, Card, Field, Segmented, Spinner, inputClass } from "../components/ui.jsx";
@@ -31,6 +31,12 @@ export default function Practice() {
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const settingsRef = useRef(null);
+
+  const chooseSet = (id) => {
+    setSetId(id);
+    requestAnimationFrame(() => settingsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
 
   const loadSets = () => {
     setError("");
@@ -90,7 +96,7 @@ export default function Practice() {
                       key={s.id}
                       role="radio"
                       aria-checked={active}
-                      onClick={() => setSetId(s.id)}
+                      onClick={() => chooseSet(s.id)}
                       className={`press rounded-tile border-2 p-4 text-left ${active ? "border-brand-700 bg-brand-50 shadow-card" : "border-line hover:border-brand-200"}`}
                     >
                       <div className="flex items-start justify-between gap-2">
@@ -110,7 +116,7 @@ export default function Practice() {
             )}
           </Card>
 
-          <Card className="flex flex-col gap-5">
+          <Card ref={settingsRef} className="flex scroll-mt-20 flex-col gap-5">
             <div className="flex flex-col gap-2">
               <span className="text-sm font-bold">Level</span>
               <Segmented options={LEVELS} value={level} onChange={setLevel} label="Level" />
