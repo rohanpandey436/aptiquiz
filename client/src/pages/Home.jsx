@@ -22,9 +22,9 @@ const fairness = [
 ];
 
 const previewRows = [
-  { rank: 1, name: "Ananya", score: 2860, delta: 2 },
-  { rank: 2, name: "Rohan", score: 2790, delta: -1 },
-  { rank: 3, name: "Zoya", score: 2410, delta: 1 },
+  { rank: 1, name: "Sarthak", score: 2860, delta: 2 },
+  { rank: 2, name: "Harshita", score: 2790, delta: 1 },
+  { rank: 3, name: "Rohan", score: 2410, delta: -1 },
 ];
 
 function LeaderboardPreview() {
