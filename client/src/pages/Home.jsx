@@ -11,6 +11,8 @@ const steps = [
   { title: "See why you lost", text: "A report card shows points lost to speed, to mistakes and to pressure, topic by topic." },
 ];
 
+const proofs = ["Up to 50 players a room", "Server-timed rounds", "Fair on slow Wi-Fi", "Report card after every game"];
+
 const fairness = [
   "The server runs the clock and scores every answer. Your phone decides nothing.",
   "Your connection delay is measured and subtracted, so a slow network is not a handicap.",
@@ -35,7 +37,9 @@ export default function Home() {
 
   return (
     <Shell>
-      <section className="grid items-start gap-8 py-6 md:grid-cols-[1.1fr_1fr] md:py-10">
+      <section className="relative isolate grid items-start gap-8 py-6 md:grid-cols-[1.1fr_1fr] md:py-12">
+        <div aria-hidden="true" className="pointer-events-none absolute -left-32 -top-24 -z-10 h-80 w-80 rounded-full bg-brand-100 opacity-70 blur-3xl" />
+        <div aria-hidden="true" className="pointer-events-none absolute -right-24 top-32 -z-10 h-72 w-72 rounded-full bg-warm-bg opacity-80 blur-3xl" />
         <div>
           <p className="text-sm font-bold uppercase tracking-wide text-brand-700">Live aptitude arena</p>
           <h1 className="mt-2 text-4xl font-extrabold leading-tight tracking-tight md:text-5xl">Aptitude practice as a live game.</h1>
@@ -53,6 +57,13 @@ export default function Home() {
               </Button>
             </Link>
           </div>
+          <ul className="mt-8 flex flex-wrap gap-2" aria-label="Highlights">
+            {proofs.map((p) => (
+              <li key={p} className="rounded-full border border-line bg-white/80 px-3 py-1.5 text-sm font-semibold text-muted">
+                {p}
+              </li>
+            ))}
+          </ul>
         </div>
 
         <Card as="form" onSubmit={submit} className="md:p-7" aria-labelledby="join-title">

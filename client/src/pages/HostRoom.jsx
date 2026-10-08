@@ -138,14 +138,15 @@ function LobbyView({ lobby, code, onStart, onKick, busy }) {
   const url = joinUrl(code);
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
-      <Card className="flex flex-col items-center text-center">
+      <Card className="flex flex-col items-center bg-gradient-to-b from-brand-50 to-white text-center">
         <p className="text-sm font-semibold uppercase tracking-wide text-muted">Join at</p>
         <p className="mt-1 text-lg font-bold text-brand-700">{url.replace(/^https?:\/\//, "")}</p>
         <p className="mt-5 text-sm font-semibold uppercase tracking-wide text-muted">Room code</p>
-        <p className="mt-1 text-6xl font-extrabold tracking-[0.2em] text-ink md:text-7xl" aria-label={`Room code ${code.split("").join(" ")}`}>
+        <p className="mt-1 text-6xl font-extrabold tracking-[0.2em] text-brand-800 md:text-7xl" aria-label={`Room code ${code.split("").join(" ")}`}>
           {code}
         </p>
-        <div className="mt-6 rounded-2xl border border-line p-3">
+        <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-muted">Or scan</p>
+        <div className="mt-2 rounded-2xl border border-line bg-white p-3 shadow-sm">
           <QRCodeSVG value={url} size={200} aria-label="QR code to join" />
         </div>
         <p className="mt-4 text-sm text-muted">{lobby.setTitle} / {lobby.questionCount} questions / {lobby.settings.questionTime} s each</p>
@@ -252,6 +253,7 @@ function RevealView({ reveal, flags, onNext, onEnd, busy }) {
           </Banner>
         ) : null}
         <div className="flex flex-wrap items-center justify-end gap-3">
+          <span className="mr-auto text-xs text-muted">Enter key also moves on</span>
           <Button variant="ghost" onClick={onEnd} disabled={busy}>
             End game
           </Button>
@@ -303,9 +305,12 @@ function EndView({ end, flags, code }) {
 
       <div className="grid gap-3 sm:grid-cols-3">
         {podium.map((p, i) => (
-          <Card key={p.id} className={i === 0 ? "border-warm/50 bg-warm-bg/50" : ""}>
-            <p className="text-sm font-semibold uppercase tracking-wide text-muted">{["Winner", "Second", "Third"][i]}</p>
-            <p className="mt-1 truncate text-2xl font-extrabold">{p.name}</p>
+          <Card key={p.id} className={["border-warm/60 bg-warm-bg/60", "border-line bg-surface", "border-warm/30 bg-warm-bg/25"][i]}>
+            <div className="flex items-center gap-3">
+              <span className={`flex h-10 w-10 items-center justify-center rounded-full text-lg font-extrabold text-white ${["bg-warm", "bg-muted", "bg-warm/70"][i]}`}>{i + 1}</span>
+              <p className="text-sm font-semibold uppercase tracking-wide text-muted">{["Winner", "Second", "Third"][i]}</p>
+            </div>
+            <p className="mt-3 truncate text-2xl font-extrabold">{p.name}</p>
             <p className="text-lg font-bold tabular text-brand-700">{p.score} pts</p>
           </Card>
         ))}

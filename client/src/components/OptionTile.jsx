@@ -20,8 +20,8 @@ export function OptionTile({ index, text, state = "idle", count, total, onClick,
   const letter = LETTERS[index] || String(index + 1);
   const color = OPTION_COLORS[index] || "bg-opt-a";
   const interactive = typeof onClick === "function" && !disabled;
-  const pad = size === "lg" ? "p-5 min-h-24 text-xl" : "p-4 min-h-18 text-base";
-  const base = "relative flex w-full items-center gap-3 rounded-2xl border-2 text-left font-semibold transition-all";
+  const pad = size === "lg" ? "p-5 min-h-24 text-xl" : "p-4 min-h-18 text-lg";
+  const base = "relative flex w-full items-center gap-3 rounded-2xl border-2 text-left font-semibold shadow-sm transition-all";
   const styles = {
     idle: `${color} border-transparent text-white ${interactive ? "hover:brightness-110 active:scale-[0.99]" : ""}`,
     selected: `${color} border-ink text-white ring-4 ring-ink/15`,
