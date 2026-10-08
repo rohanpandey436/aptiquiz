@@ -5,7 +5,7 @@ function Movement({ delta }) {
   if (!delta) return <span className="w-8 shrink-0" aria-hidden="true" />;
   const up = delta > 0;
   return (
-    <span className={`w-8 shrink-0 text-center text-xs font-extrabold ${up ? "text-good" : "text-bad"}`} aria-label={up ? `climbed ${delta}` : `dropped ${-delta}`}>
+    <span className={`w-8 shrink-0 text-center text-xs font-extrabold ${up ? "text-good-ink" : "text-bad-ink"}`} aria-label={up ? `climbed ${delta}` : `dropped ${-delta}`}>
       {up ? "▲" : "▼"}
       {Math.abs(delta)}
     </span>
@@ -14,7 +14,7 @@ function Movement({ delta }) {
 
 const rankChip = (rank) => {
   if (rank === 1) return "bg-accent text-ink";
-  if (rank === 2) return "bg-ink text-white";
+  if (rank === 2) return "bg-ink text-canvas";
   if (rank === 3) return "bg-muted text-white";
   return "bg-surface-2 text-ink";
 };
@@ -26,7 +26,7 @@ export function Leaderboard({ entries, highlightId, limit = 10, showDelta = true
       <AnimatePresence initial={false}>
         {rows.map((e) => {
           const me = e.id === highlightId;
-          const tone = me ? "border-brand-200 bg-brand-50 border-l-4 border-l-brand-700" : e.rank === 1 ? "border-accent/40 bg-accent-soft/60 border-l-4 border-l-accent" : "border-line bg-white";
+          const tone = me ? "border-brand-200 bg-brand-50 border-l-4 border-l-brand-700" : e.rank === 1 ? "border-accent/40 bg-accent-soft/60 border-l-4 border-l-accent" : "border-line bg-card";
           return (
             <motion.li
               key={e.id}
@@ -40,11 +40,11 @@ export function Leaderboard({ entries, highlightId, limit = 10, showDelta = true
               <span className={`display flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold tabular ${rankChip(e.rank)}`}>{e.rank}</span>
               <span className="min-w-0 flex-1 truncate font-semibold">
                 {e.name}
-                {me ? <span className="ml-1 text-[10px] font-extrabold uppercase tracking-wide text-brand-700">you</span> : null}
+                {me ? <span className="ml-1 text-[10px] font-extrabold uppercase tracking-wide text-brand-ink">you</span> : null}
               </span>
               {showDelta ? <Movement delta={e.delta} /> : null}
               {showLast && e.lastPoints ? (
-                <span className={`hidden w-12 text-right text-sm font-bold tabular md:inline-block ${e.lastPoints > 0 ? "text-good" : "text-bad"}`}>{signed(e.lastPoints)}</span>
+                <span className={`hidden w-12 text-right text-sm font-bold tabular md:inline-block ${e.lastPoints > 0 ? "text-good-ink" : "text-bad-ink"}`}>{signed(e.lastPoints)}</span>
               ) : showLast ? (
                 <span className="hidden w-12 md:inline-block" />
               ) : null}

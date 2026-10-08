@@ -25,8 +25,10 @@ AptiQuiz turns aptitude practice into a live game. A host creates a room from a 
 ## Done / Left / Plan
 
 **Done**
-- Question authoring two ways: a plain-text quick creator on the Host page (type questions as you would on paper, "A) 30", "Answer: B") that saves the set and opens the room in one step, and a full editor with topic, difficulty, explanation, image, table, reorder, duplicate, delete, plain-text and JSON import. Six built-in sets with 54 verified questions.
-- Rooms with short join codes and a QR code, a live lobby, host start. The host can change the set, pace, exam mode and auto-advance in the lobby before starting.
+- Question authoring two ways: a plain-text quick creator on the Host page (type questions as you would on paper, "A) 30", "Answer: B") that saves the set and opens the room in one step, and a full editor with topic, difficulty, explanation, image, table, reorder, duplicate, delete, plain-text and JSON import. Nine built-in sets built from a bank of 60 questions we wrote for this project, each tagged easy, medium or hard, with a worked explanation: a demo round, a balanced mix, easy, medium and hard rounds, and one pack per topic.
+- Rooms with short join codes and a QR code, a live lobby, host start. The host picks a level (mixed, easy, medium or hard) and can change the set, level, pace, exam mode and auto-advance in the lobby before starting.
+- Practice mode: play any set alone at a relaxed, normal or fast pace, with the same report card at the end. Practice games are never counted in the league.
+- Light and dark themes, chosen from the header and remembered on the device. Every colour comes from one token sheet, so both themes keep the same contrast rules.
 - Live play: server-timed countdown, per-player shuffled options, answer lock-in with the measured answer time, live "answered" counter. Auto-advance by default: the server starts the next question 8 seconds after each reveal with a countdown on every screen; the host can skip ahead or pause.
 - Scoring that rewards speed, with the rule shown to players; optional exam mode with negative marking.
 - Animated leaderboard with movement arrows after each question; on laptops players also see a live standings panel beside the question, on phones a one-line strip that expands. Final results with podium, per-player accuracy, speed and topic strengths.
@@ -77,6 +79,7 @@ The full design, with the life of a round and the reasoning behind each choice, 
 - **Explanations on the reveal.** Every built-in question carries a one-line explanation that appears on every screen when the answer is revealed.
 - **Tab-switch flags.** The host sees who left the page during a question.
 - **Projector view.** `/watch/CODE` mirrors the host screen without controls, for a second display at college events.
+- **Practice mode and levels.** Solo practice with the same report card, and easy, medium and hard filters on any set, so a student can warm up alone before competing.
 
 ## How to run it
 

@@ -29,14 +29,14 @@ const previewRows = [
 
 function LeaderboardPreview() {
   return (
-    <div aria-hidden="true" className="rounded-2xl border border-line bg-white p-3 shadow-card">
+    <div aria-hidden="true" className="rounded-2xl border border-line bg-card p-3 shadow-card">
       <p className="px-1 text-[11px] font-bold uppercase tracking-wider text-muted">Live leaderboard</p>
       <ul className="mt-2 flex flex-col gap-1.5">
         {previewRows.map((r) => (
           <li key={r.name} className={`flex items-center gap-2 rounded-xl px-2 py-1.5 text-sm ${r.rank === 1 ? "bg-accent-soft" : "bg-surface"}`}>
-            <span className={`display flex h-6 w-6 items-center justify-center rounded-md text-xs font-bold ${r.rank === 1 ? "bg-accent text-ink" : "bg-ink text-white"}`}>{r.rank}</span>
+            <span className={`display flex h-6 w-6 items-center justify-center rounded-md text-xs font-bold ${r.rank === 1 ? "bg-accent text-ink" : "bg-ink text-canvas"}`}>{r.rank}</span>
             <span className="flex-1 font-semibold">{r.name}</span>
-            <span className={`text-xs font-extrabold ${r.delta > 0 ? "text-good" : "text-bad"}`}>
+            <span className={`text-xs font-extrabold ${r.delta > 0 ? "text-good-ink" : "text-bad-ink"}`}>
               {r.delta > 0 ? "▲" : "▼"}
               {Math.abs(r.delta)}
             </span>
@@ -82,7 +82,7 @@ export default function Home() {
                 <br />
                 as a <span className="text-accent">live game.</span>
               </h1>
-              <p className="mt-6 max-w-xl text-lg leading-relaxed text-brand-100 md:text-xl">
+              <p className="mt-6 max-w-xl text-lg leading-relaxed text-onblue md:text-xl">
                 Up to 50 students answer the same question at the same time, against the clock. The leaderboard updates after every question. At the end you see
                 exactly where you lost points: speed, mistakes or pressure.
               </p>
@@ -92,9 +92,9 @@ export default function Home() {
                     Host a game
                   </Button>
                 </Link>
-                <Link to="/league">
+                <Link to="/practice">
                   <Button size="lg" variant="glass">
-                    College league
+                    Practise alone
                   </Button>
                 </Link>
               </div>
@@ -131,7 +131,7 @@ export default function Home() {
                     <input id="join-name" className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" maxLength={20} autoComplete="nickname" />
                   </Field>
                   {error ? (
-                    <p role="alert" className="rounded-xl bg-bad-bg px-3 py-2 text-sm font-bold text-bad">
+                    <p role="alert" className="rounded-xl bg-bad-bg px-3 py-2 text-sm font-bold text-bad-ink">
                       {error}
                     </p>
                   ) : null}
@@ -148,7 +148,7 @@ export default function Home() {
       <section className="mx-auto max-w-6xl px-4 pt-14 md:pt-24" aria-labelledby="how-title">
         <div className="grid gap-10 md:grid-cols-[0.9fr_1.1fr]">
           <div className="reveal">
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-brand-800">How it works</p>
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-brand-ink">How it works</p>
             <h2 id="how-title" className="display mt-3 text-4xl font-extrabold leading-tight md:text-5xl">
               Four steps. Ten minutes. Nothing to learn.
             </h2>
@@ -184,8 +184,8 @@ export default function Home() {
             </h2>
             <ul className="mt-5 space-y-3 text-muted">
               <li>
-                <span className="font-bold text-ink">Correct answer:</span> <span className="font-extrabold tabular text-brand-700">500</span> points, plus up to{" "}
-                <span className="font-extrabold tabular text-brand-700">+500</span> the faster you answer.
+                <span className="font-bold text-ink">Correct answer:</span> <span className="font-extrabold tabular text-brand-ink">500</span> points, plus up to{" "}
+                <span className="font-extrabold tabular text-brand-ink">+500</span> the faster you answer.
               </li>
               <li>
                 <span className="font-bold text-ink">Wrong or skipped:</span> 0 points in game mode.
@@ -221,9 +221,16 @@ export default function Home() {
             <h2 className="display text-3xl font-extrabold md:text-5xl">Start your first game in 30 seconds.</h2>
             <p className="mt-3 max-w-xl text-muted">Use a built-in question set or write your own. Every game adds points to your college in the league.</p>
           </div>
-          <Link to="/host" className="reveal" style={{ transitionDelay: "120ms" }}>
-            <Button size="lg">Host a game</Button>
-          </Link>
+          <div className="reveal flex flex-wrap gap-3" style={{ transitionDelay: "120ms" }}>
+            <Link to="/host">
+              <Button size="lg">Host a game</Button>
+            </Link>
+            <Link to="/league">
+              <Button size="lg" variant="secondary">
+                College league
+              </Button>
+            </Link>
+          </div>
         </div>
       </section>
     </Shell>

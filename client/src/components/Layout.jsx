@@ -1,5 +1,6 @@
 import { Link, NavLink } from "react-router-dom";
 import { useConnection } from "../lib/socket.js";
+import { useTheme } from "../lib/theme.js";
 
 export function Logo({ className = "" }) {
   return (
@@ -14,34 +15,65 @@ export function Logo({ className = "" }) {
   );
 }
 
-const navClass = ({ isActive }) => `press rounded-full px-3 py-1.5 text-sm font-bold ${isActive ? "bg-brand-50 text-brand-800" : "text-muted hover:text-ink"}`;
+const navClass = ({ isActive }) => `press rounded-full px-3 py-1.5 text-sm font-bold ${isActive ? "bg-brand-50 text-brand-ink" : "text-muted hover:text-ink"}`;
+
+function ThemeToggle() {
+  const [theme, toggle] = useTheme();
+  const dark = theme === "dark";
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      className="press ml-1 flex h-9 w-9 items-center justify-center rounded-full border border-line bg-card text-ink hover:bg-surface"
+      aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
+      title={dark ? "Light mode" : "Dark mode"}
+    >
+      {dark ? (
+        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" strokeLinecap="round" />
+        </svg>
+      ) : (
+        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+          <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" strokeLinejoin="round" />
+        </svg>
+      )}
+    </button>
+  );
+}
 
 export function Shell({ children, wide = false, nav = true, full = false, sticky = true }) {
   const connected = useConnection();
   return (
-    <div className="flex min-h-dvh flex-col bg-white">
-      <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-white focus:px-3 focus:py-2">
+    <div className="flex min-h-dvh flex-col bg-canvas">
+      <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-card focus:px-3 focus:py-2">
         Skip to content
       </a>
-      <header className={`${sticky ? "sticky top-0 z-20" : ""} border-b border-line bg-white/90 backdrop-blur`}>
+      <header className={`${sticky ? "sticky top-0 z-20" : ""} border-b border-line bg-canvas/90 backdrop-blur`}>
         <div className={`mx-auto flex items-center justify-between px-4 py-3 ${wide ? "max-w-7xl" : "max-w-6xl"}`}>
           <Logo />
-          {nav ? (
-            <nav aria-label="Main" className="flex items-center gap-1">
-              <NavLink to="/host" className={navClass}>
-                Host
-              </NavLink>
-              <NavLink to="/play" className={navClass}>
-                Join
-              </NavLink>
-              <NavLink to="/league" className={navClass}>
-                League
-              </NavLink>
-              <NavLink to="/sets" className={({ isActive }) => `hidden sm:inline-flex ${navClass({ isActive })}`}>
-                Questions
-              </NavLink>
-            </nav>
-          ) : null}
+          <div className="flex items-center gap-1">
+            {nav ? (
+              <nav aria-label="Main" className="flex items-center gap-1">
+                <NavLink to="/host" className={navClass}>
+                  Host
+                </NavLink>
+                <NavLink to="/play" className={navClass}>
+                  Join
+                </NavLink>
+                <NavLink to="/practice" className={({ isActive }) => `hidden sm:inline-flex ${navClass({ isActive })}`}>
+                  Practice
+                </NavLink>
+                <NavLink to="/league" className={navClass}>
+                  League
+                </NavLink>
+                <NavLink to="/sets" className={({ isActive }) => `hidden md:inline-flex ${navClass({ isActive })}`}>
+                  Questions
+                </NavLink>
+              </nav>
+            ) : null}
+            <ThemeToggle />
+          </div>
         </div>
       </header>
       {!connected ? (

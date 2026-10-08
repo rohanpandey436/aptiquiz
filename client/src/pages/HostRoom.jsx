@@ -9,7 +9,7 @@ import { OptionTile } from "../components/OptionTile.jsx";
 import { Leaderboard } from "../components/Leaderboard.jsx";
 import { QuestionBody } from "../components/QuestionBody.jsx";
 import { Confetti } from "../components/Confetti.jsx";
-import { Countdown, TIME_CHOICES, Toggle } from "../components/RoomSettings.jsx";
+import { Countdown, LEVEL_CHOICES, TIME_CHOICES, Toggle } from "../components/RoomSettings.jsx";
 import { api } from "../lib/api.js";
 import { request, socket, useSocketEvents } from "../lib/socket.js";
 import { hostSeat } from "../lib/storage.js";
@@ -194,20 +194,21 @@ function CodeBlock({ code, lobby }) {
       <div aria-hidden="true" className="dot-grid pointer-events-none absolute inset-0 opacity-50" />
       <div aria-hidden="true" className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rotate-12 rounded-[24px] bg-accent/90" />
       <div className="relative flex flex-col items-center text-center">
-        <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-brand-100">Join at</p>
+        <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-onblue">Join at</p>
         <p className="mt-1 text-xl font-bold md:text-2xl">{url.replace(/^https?:\/\//, "")}</p>
-        <p className="mt-6 text-[11px] font-extrabold uppercase tracking-[0.14em] text-brand-100">Room code</p>
+        <p className="mt-6 text-[11px] font-extrabold uppercase tracking-[0.14em] text-onblue">Room code</p>
         <p className="display mt-1 text-[64px] font-extrabold leading-none tracking-[0.18em] lg:text-8xl" aria-label={`Room code ${code.split("").join(" ")}`}>
           {code}
         </p>
-        <p className="mt-6 text-[11px] font-extrabold uppercase tracking-[0.14em] text-brand-100">Or scan</p>
+        <p className="mt-6 text-[11px] font-extrabold uppercase tracking-[0.14em] text-onblue">Or scan</p>
         <div className="mt-2 inline-block rounded-card bg-white p-4 shadow-card">
           <QRCodeSVG value={url} size={200} aria-label="QR code to join" />
         </div>
-        <p className="mt-5 text-sm font-semibold text-brand-100">
+        <p className="mt-5 text-sm font-semibold text-onblue">
           {lobby.setTitle} / {lobby.questionCount} questions / {lobby.settings.questionTime} s each
+          {lobby.settings.difficulty && lobby.settings.difficulty !== "mixed" ? ` / ${lobby.settings.difficulty} only` : ""}
         </p>
-        <p className="mt-1 text-xs text-brand-100">{lobby.scoring.text}</p>
+        <p className="mt-1 text-xs text-onblue">{lobby.scoring.text}</p>
         <div className="mt-3 flex flex-wrap justify-center gap-2">
           {lobby.settings.examMode ? <Badge tone="accent">Exam mode: negative marking</Badge> : null}
           <Badge tone="white">{lobby.settings.autoAdvance ? "Auto-advance on" : "Host advances manually"}</Badge>
@@ -226,7 +227,7 @@ function LobbyView({ lobby, code, spectator, busy, onStart, onKick, onUpdate }) 
         <Card>
           <div className="flex items-center justify-between gap-3">
             <h1 className="display text-3xl font-bold">
-              <span key={lobby.players.length} className="pop inline-block text-brand-700 tabular">
+              <span key={lobby.players.length} className="pop inline-block text-brand-ink tabular">
                 {lobby.players.length}
               </span>{" "}
               {lobby.players.length === 1 ? "player" : "players"} in
@@ -250,7 +251,7 @@ function LobbyView({ lobby, code, spectator, busy, onStart, onKick, onUpdate }) 
                   {p.name}
                   {!p.connected ? <span className="text-xs font-normal">(away)</span> : null}
                   {!spectator ? (
-                    <button type="button" onClick={() => onKick(p.id)} className="ml-1 rounded-full px-1 text-xs text-muted hover:bg-bad-bg hover:text-bad" aria-label={`Remove ${p.name}`}>
+                    <button type="button" onClick={() => onKick(p.id)} className="ml-1 rounded-full px-1 text-xs text-muted hover:bg-bad-bg hover:text-bad-ink" aria-label={`Remove ${p.name}`}>
                       &#10005;
                     </button>
                   ) : null}
@@ -263,7 +264,7 @@ function LobbyView({ lobby, code, spectator, busy, onStart, onKick, onUpdate }) 
           <Card>
             <button type="button" onClick={() => setOpen((o) => !o)} className="flex w-full items-center justify-between text-left" aria-expanded={open}>
               <span className="display text-lg font-bold">Room settings</span>
-              <span className="text-sm font-bold text-brand-700">{open ? "Hide" : "Change"}</span>
+              <span className="text-sm font-bold text-brand-ink">{open ? "Hide" : "Change"}</span>
             </button>
             {open ? <SettingsPanel lobby={lobby} onUpdate={onUpdate} busy={busy} /> : <p className="mt-1 text-sm text-muted">Change the questions, the time, exam mode or auto-advance before you start.</p>}
             <p className="mt-4 text-xs text-muted">
@@ -289,6 +290,15 @@ function SettingsPanel({ lobby, onUpdate, busy }) {
           {(sets || [{ id: lobby.setId, title: lobby.setTitle, count: lobby.questionCount }]).map((s) => (
             <option key={s.id} value={s.id}>
               {s.title} ({s.count} Qs)
+            </option>
+          ))}
+        </select>
+      </Field>
+      <Field id="lobby-level" label="Level">
+        <select id="lobby-level" className={inputClass} value={lobby.settings.difficulty || "mixed"} onChange={(e) => onUpdate({ difficulty: e.target.value })} disabled={busy}>
+          {LEVEL_CHOICES.map((l) => (
+            <option key={l.value} value={l.value}>
+              {l.label}
             </option>
           ))}
         </select>
@@ -398,7 +408,7 @@ function RevealView({ reveal, flags, spectator, busy, onNext, onAuto, onEnd }) {
               <span>{spectator ? "Waiting for the host" : "Auto-advance paused"}</span>
             )}
             {!spectator ? (
-              <button type="button" onClick={() => onAuto(!reveal.autoAdvance)} className="rounded-full border border-line bg-white px-3 py-1 text-xs font-bold text-brand-700 hover:bg-brand-50" disabled={busy}>
+              <button type="button" onClick={() => onAuto(!reveal.autoAdvance)} className="rounded-full border border-line bg-card px-3 py-1 text-xs font-bold text-brand-ink hover:bg-brand-50" disabled={busy}>
                 {reveal.autoAdvance ? "Pause" : "Resume auto"}
               </button>
             ) : null}
@@ -457,7 +467,7 @@ function EndView({ end, code, spectator }) {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-brand-800">
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-brand-ink">
             {insights.setTitle} / {insights.college}
           </p>
           <h1 className="display mt-1 text-4xl font-extrabold">Final results</h1>
@@ -481,16 +491,16 @@ function EndView({ end, code, spectator }) {
             initial={{ y: 24, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ type: "spring", stiffness: 300, damping: 24, delay: podiumDelay[i] }}
-            className={`relative overflow-hidden rounded-card border p-5 ${podiumOrder[i]} ${i === 0 ? "border-0 bg-brand-gradient text-white shadow-pop" : i === 1 ? "border-line bg-surface-2" : "border-line bg-white"}`}
+            className={`relative overflow-hidden rounded-card border p-5 ${podiumOrder[i]} ${i === 0 ? "border-0 bg-brand-gradient text-white shadow-pop" : i === 1 ? "border-line bg-surface-2" : "border-line bg-card"}`}
           >
             {i === 0 ? <Confetti pieces={20} /> : null}
             <div className="relative">
               <div className="flex items-center gap-3">
-                <span className={`display flex h-12 w-12 items-center justify-center rounded-full text-xl font-bold ${i === 0 ? "bg-accent text-ink" : i === 1 ? "bg-ink text-white" : "bg-muted text-white"}`}>{i + 1}</span>
-                <p className={`text-[11px] font-extrabold uppercase tracking-[0.14em] ${i === 0 ? "text-brand-100" : "text-muted"}`}>{["Winner", "Second", "Third"][i]}</p>
+                <span className={`display flex h-12 w-12 items-center justify-center rounded-full text-xl font-bold ${i === 0 ? "bg-accent text-ink" : i === 1 ? "bg-ink text-canvas" : "bg-muted text-white"}`}>{i + 1}</span>
+                <p className={`text-[11px] font-extrabold uppercase tracking-[0.14em] ${i === 0 ? "text-onblue" : "text-muted"}`}>{["Winner", "Second", "Third"][i]}</p>
               </div>
               <p className={`display mt-4 truncate font-bold ${i === 0 ? "text-3xl lg:text-4xl" : "text-2xl"}`}>{p.name}</p>
-              <p className={`text-2xl font-extrabold tabular ${i === 0 ? "text-accent" : "text-brand-700"}`}>{p.score} pts</p>
+              <p className={`text-2xl font-extrabold tabular ${i === 0 ? "text-accent" : "text-brand-ink"}`}>{p.score} pts</p>
             </div>
           </motion.div>
         ))}

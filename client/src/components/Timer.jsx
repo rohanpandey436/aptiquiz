@@ -23,7 +23,7 @@ export function Timer({ endsAt, durationMs, label = "Time left", size = "md" }) 
     <div role="timer" aria-label={`${secondsLeft} seconds left`}>
       <div className="mb-1.5 flex items-baseline justify-between">
         <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted">{label}</span>
-        <span className={`inline-block font-extrabold tabular ${digits} ${urgent ? "animate-pulse-soft text-bad" : "text-ink"}`}>{secondsLeft}s</span>
+        <span className={`inline-block font-extrabold tabular ${digits} ${urgent ? "animate-pulse-soft text-bad-ink" : "text-ink"}`}>{secondsLeft}s</span>
       </div>
       <div className={`${track} w-full overflow-hidden rounded-full bg-line`} aria-hidden="true">
         <div className={`h-full rounded-full ${urgent ? "bg-bad" : "bg-brand-gradient"}`} style={{ width: `${frac * 100}%`, transition: "width 100ms linear" }} />

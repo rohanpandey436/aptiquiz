@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Shell } from "../components/Layout.jsx";
 import { Badge, Banner, Button, Card, Field, Segmented, Spinner, inputClass } from "../components/ui.jsx";
-import { TIME_CHOICES, Toggle } from "../components/RoomSettings.jsx";
+import { LEVEL_CHOICES, TIME_CHOICES, Toggle } from "../components/RoomSettings.jsx";
 import { api } from "../lib/api.js";
 import { request } from "../lib/socket.js";
 import { hostSeat } from "../lib/storage.js";
@@ -23,6 +23,7 @@ export default function HostCreate() {
   const [ownText, setOwnText] = useState("");
   const [college, setCollege] = useState("Lloyd Institute");
   const [questionTime, setQuestionTime] = useState(0);
+  const [difficulty, setDifficulty] = useState("mixed");
   const [examMode, setExamMode] = useState(false);
   const [autoAdvance, setAutoAdvance] = useState(true);
   const [error, setError] = useState("");
@@ -52,7 +53,7 @@ export default function HostCreate() {
         const saved = await api.post("/sets", { title: ownTitle.trim() || "My questions", questionTime: questionTime || 20, questions: parsed.questions });
         chosenSetId = saved.id;
       }
-      const res = await request("host:create", { setId: chosenSetId, college: college.trim(), questionTime: questionTime || undefined, examMode, autoAdvance });
+      const res = await request("host:create", { setId: chosenSetId, college: college.trim(), questionTime: questionTime || undefined, examMode, autoAdvance, difficulty });
       if (!res.ok) throw new Error(res.error || "Could not create the room");
       hostSeat.set(res.code, { hostToken: res.hostToken });
       navigate(`/host/${res.code}`);
@@ -67,7 +68,7 @@ export default function HostCreate() {
   return (
     <Shell>
       <div className="mx-auto max-w-3xl">
-        <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-brand-800">Host</p>
+        <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-brand-ink">Host</p>
         <h1 className="display mt-2 text-4xl font-extrabold">Host a game</h1>
         <p className="mt-2 text-muted">Pick questions, set the time, and get a room code for the big screen. You can still change settings in the lobby.</p>
 
@@ -134,16 +135,16 @@ export default function HostCreate() {
                     </Badge>
                   )}
                   {parsed.count === 0 ? (
-                    <button type="button" className="font-bold text-brand-700 underline" onClick={() => setOwnText(QUICK_EXAMPLE)}>
+                    <button type="button" className="font-bold text-brand-ink underline" onClick={() => setOwnText(QUICK_EXAMPLE)}>
                       paste the example
                     </button>
                   ) : null}
-                  <Link to="/sets" className="ml-auto font-bold text-brand-700 underline">
+                  <Link to="/sets" className="ml-auto font-bold text-brand-ink underline">
                     Need images or tables? Open the full editor
                   </Link>
                 </div>
                 {parsed.errors.length ? (
-                  <ul className="rounded-xl bg-bad-bg px-4 py-3 text-sm font-semibold text-bad">
+                  <ul className="rounded-xl bg-bad-bg px-4 py-3 text-sm font-semibold text-bad-ink">
                     {parsed.errors.slice(0, 4).map((e) => (
                       <li key={e}>{e}</li>
                     ))}
@@ -166,6 +167,16 @@ export default function HostCreate() {
                 ))}
               </select>
             </Field>
+            <Field id="level" label="Level" hint="Easy, medium or hard keeps only those questions from the set.">
+              <select id="level" className={inputClass} value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
+                {LEVEL_CHOICES.map((l) => (
+                  <option key={l.value} value={l.value}>
+                    {l.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <div className="hidden sm:block" />
             <Toggle id="auto" checked={autoAdvance} onChange={setAutoAdvance} title="Auto-advance" text="The next question starts on its own 8 seconds after the answer is shown. You can still press Next or pause." />
             <Toggle id="exam" checked={examMode} onChange={setExamMode} title="Exam mode (negative marking)" text="A wrong answer costs 250 points, like a real placement test. Players see this in the lobby." />
           </Card>

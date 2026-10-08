@@ -6,6 +6,12 @@
     <meta name="theme-color" content="#ffffff" />
     <meta name="description" content="AptiQuiz: live multiplayer aptitude practice for placements. Join with a code, race the clock, see why you lost points." />
     <title>AptiQuiz</title>
+    <script>
+      try {
+        var t = localStorage.getItem("aq:theme");
+        if (t === "dark") document.documentElement.setAttribute("data-theme", "dark");
+      } catch (e) {}
+    </script>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/icon-192.png" />

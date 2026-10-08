@@ -65,6 +65,7 @@ export function attachSockets(io, game) {
         examMode: !!payload?.examMode,
         autoAdvance: payload?.autoAdvance !== false,
         practice: !!payload?.practice,
+        difficulty: typeof payload?.difficulty === "string" ? payload.difficulty : "mixed",
       });
       if (result.error) return reply(ack, { ok: false, error: result.error });
       game.attachHost(result.room, socket);
@@ -78,6 +79,28 @@ export function attachSockets(io, game) {
       reply(ack, { ok: true, code: room.code, state: game.statePayloadForHost(room) });
     });
 
+    on("practice:start", (payload, ack) => {
+      const setId = cleanId(payload?.setId);
+      if (!setId) return reply(ack, { ok: false, error: "Pick a question set" });
+      const name = cleanName(payload?.name) || "You";
+      const result = game.createRoom({
+        college: "Practice",
+        setId,
+        questionTime: cleanInt(payload?.questionTime, 5, 120, 0),
+        examMode: false,
+        autoAdvance: true,
+        practice: true,
+        difficulty: typeof payload?.difficulty === "string" ? payload.difficulty : "mixed",
+      });
+      if (result.error) return reply(ack, { ok: false, error: result.error });
+      const joined = game.joinPlayer(result.room, socket, name, ip);
+      if (joined.error) return reply(ack, { ok: false, error: joined.error });
+      const started = game.startGame(result.room);
+      if (started.error) return reply(ack, { ok: false, error: started.error });
+      probe();
+      reply(ack, { ok: true, code: result.room.code, playerId: joined.player.id, token: joined.player.token, name: joined.player.name });
+    });
+
     on("host:update", (payload, ack) => {
       const { room, error } = hostRoom(payload);
       if (error) return reply(ack, { ok: false, error });
@@ -87,6 +110,7 @@ export function attachSockets(io, game) {
         examMode: typeof payload?.examMode === "boolean" ? payload.examMode : undefined,
         autoAdvance: typeof payload?.autoAdvance === "boolean" ? payload.autoAdvance : undefined,
         college: cleanCollege(payload?.college),
+        difficulty: typeof payload?.difficulty === "string" ? payload.difficulty : undefined,
       });
       reply(ack, result.error ? { ok: false, error: result.error } : { ok: true });
     });

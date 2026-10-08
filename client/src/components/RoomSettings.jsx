@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
 
+export const LEVEL_CHOICES = [
+  { value: "mixed", label: "Mixed levels" },
+  { value: "easy", label: "Easy only" },
+  { value: "medium", label: "Medium only" },
+  { value: "hard", label: "Hard only" },
+];
+
 export const TIME_CHOICES = [
   { value: 0, label: "Set default" },
   { value: 10, label: "10 s" },

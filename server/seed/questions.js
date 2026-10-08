@@ -12,115 +12,111 @@ const Q = (text, options, correct, topic, difficulty, explanation, extra = {}) =
 });
 
 const quantitative = [
-  Q("A train 150 m long passes a pole in 15 seconds. What is its speed in km/h?", ["36 km/h", "40 km/h", "54 km/h", "60 km/h"], 0, "quantitative", "easy", "150 m in 15 s is 10 m/s. Multiply by 18/5 to get 36 km/h."),
-  Q("12 workers finish a job in 20 days. How many days will 15 workers take at the same rate?", ["14 days", "16 days", "18 days", "25 days"], 1, "quantitative", "easy", "Total work is 12 x 20 = 240 worker-days. 240 / 15 = 16 days."),
-  Q("What is the simple interest on Rs 8,000 at 5% per annum for 3 years?", ["Rs 1,000", "Rs 1,200", "Rs 1,500", "Rs 2,400"], 1, "quantitative", "easy", "SI = P x R x T / 100 = 8000 x 5 x 3 / 100 = Rs 1,200."),
-  Q("The average of 5 numbers is 27. When one number is removed, the average of the remaining numbers is 25. Which number was removed?", ["32", "35", "37", "40"], 1, "quantitative", "medium", "Sum of five numbers is 135. Sum of the remaining four is 100. The removed number is 35."),
-  Q("A shopkeeper marks up an item by 25% and then offers a 20% discount on the marked price. What is the net result?", ["5% profit", "5% loss", "No profit, no loss", "2% loss"], 2, "quantitative", "medium", "1.25 x 0.80 = 1.00, so the selling price equals the cost price."),
-  Q("The ages of A and B are in the ratio 3:4 and their sum is 56. What will the ratio be after 8 years?", ["4:5", "5:6", "3:4", "7:8"], 0, "quantitative", "medium", "A = 24, B = 32. After 8 years: 32:40 = 4:5."),
-  Q("What is the square root of 0.0049?", ["0.7", "0.07", "0.007", "0.49"], 1, "quantitative", "easy", "0.0049 = 49 / 10000, so the root is 7 / 100 = 0.07."),
-  Q("A can do a piece of work in 10 days and B in 15 days. How long will they take together?", ["5 days", "6 days", "8 days", "12 days"], 1, "quantitative", "easy", "1/10 + 1/15 = 1/6, so together they take 6 days."),
-  Q("Two dice are thrown. What is the probability that the sum is 9?", ["1/6", "1/9", "1/12", "1/8"], 1, "quantitative", "medium", "Favourable pairs: (3,6), (4,5), (5,4), (6,3). That is 4 out of 36 = 1/9."),
-  Q("What is the compound interest on Rs 10,000 at 10% per annum for 2 years, compounded yearly?", ["Rs 2,000", "Rs 2,100", "Rs 2,200", "Rs 2,500"], 1, "quantitative", "medium", "Amount = 10000 x 1.1 x 1.1 = 12,100. Interest = Rs 2,100."),
-  Q("What is the LCM of 12, 18 and 24?", ["36", "48", "72", "144"], 2, "quantitative", "easy", "12 = 2^2 x 3, 18 = 2 x 3^2, 24 = 2^3 x 3. LCM = 2^3 x 3^2 = 72."),
-  Q("A boat travels at 20 km/h in still water and the stream flows at 4 km/h. How long does it take to go 48 km downstream?", ["2 hours", "2.5 hours", "3 hours", "4 hours"], 0, "quantitative", "easy", "Downstream speed is 24 km/h. 48 / 24 = 2 hours."),
-  Q("40% of a number is 120. What is 25% of the same number?", ["60", "75", "80", "90"], 1, "quantitative", "easy", "The number is 300. 25% of 300 = 75."),
-  Q("A price is increased by 10% and then decreased by 10%. What is the net change?", ["No change", "1% decrease", "1% increase", "2% decrease"], 1, "quantitative", "medium", "1.10 x 0.90 = 0.99, a net decrease of 1%."),
+  Q("A college bus covers 36 km in 45 minutes. What is its average speed in km/h?", ["42 km/h", "48 km/h", "54 km/h", "60 km/h"], 1, "quantitative", "easy", "45 minutes is 0.75 hours. 36 / 0.75 = 48 km/h."),
+  Q("A hostel mess pays Rs 1,080 for 18 kg of rice. What will 7 kg cost at the same rate?", ["Rs 380", "Rs 400", "Rs 420", "Rs 450"], 2, "quantitative", "easy", "1,080 / 18 = Rs 60 per kg. 7 x 60 = Rs 420."),
+  Q("35% of the 240 students in a batch chose the data science elective. How many students is that?", ["72", "84", "96", "108"], 1, "quantitative", "easy", "0.35 x 240 = 84."),
+  Q("The sum of three consecutive even numbers is 78. What is the largest of them?", ["26", "28", "30", "32"], 1, "quantitative", "easy", "The numbers are 24, 26 and 28. The largest is 28."),
+  Q("A phone costs Rs 15,000 after a 25% discount. What was the price before the discount?", ["Rs 18,750", "Rs 20,000", "Rs 21,000", "Rs 22,500"], 1, "quantitative", "easy", "15,000 is 75% of the original price. 15,000 / 0.75 = Rs 20,000."),
+  Q("Two pipes can fill a water tank in 12 minutes and 18 minutes. How long do they take together?", ["6 minutes", "7.2 minutes", "8 minutes", "9 minutes"], 1, "quantitative", "medium", "1/12 + 1/18 = 5/36 of the tank per minute, so 36/5 = 7.2 minutes."),
+  Q("A sum of money doubles itself in 8 years at simple interest. What is the rate per year?", ["8%", "10%", "12.5%", "16%"], 2, "quantitative", "medium", "Doubling means the interest equals the principal: 100% over 8 years, so 12.5% a year."),
+  Q("In a class the ratio of boys to girls is 5:3, and there are 16 more boys than girls. How many students are there?", ["48", "56", "64", "72"], 2, "quantitative", "medium", "5x - 3x = 16 gives x = 8. Total is 8x = 64."),
+  Q("A shopkeeper sells a bag at 20% profit. Had he sold it for Rs 90 less, he would have made 5% profit. What did the bag cost him?", ["Rs 500", "Rs 540", "Rs 600", "Rs 650"], 2, "quantitative", "medium", "The Rs 90 difference is 15% of the cost price, so the cost price is Rs 600."),
+  Q("The average age of 6 friends is 22. When a seventh friend joins, the average becomes 23. How old is the seventh friend?", ["25", "27", "29", "31"], 2, "quantitative", "medium", "7 x 23 = 161 and 6 x 22 = 132. The newcomer is 161 - 132 = 29."),
+  Q("Arjun invests Rs 30,000 and Bhavna invests Rs 40,000 in a venture. Arjun withdraws after 8 months. Out of a yearly profit of Rs 1,20,000, how much does Bhavna get?", ["Rs 60,000", "Rs 72,000", "Rs 80,000", "Rs 90,000"], 2, "quantitative", "hard", "Shares are 30,000 x 8 : 40,000 x 12 = 240 : 480 = 1 : 2. Bhavna gets two thirds, Rs 80,000."),
+  Q("On Rs 20,000 at 10% a year for 2 years, how much more is the compound interest (yearly) than the simple interest?", ["Rs 100", "Rs 150", "Rs 200", "Rs 250"], 2, "quantitative", "hard", "Compound interest is 20,000 x 0.21 = 4,200. Simple interest is 4,000. The difference is Rs 200."),
+  Q("A metro train 240 m long crosses a platform 360 m long in 30 seconds. What is its speed?", ["60 km/h", "66 km/h", "72 km/h", "80 km/h"], 2, "quantitative", "hard", "It covers 240 + 360 = 600 m in 30 s, which is 20 m/s, or 72 km/h."),
+  Q("Two cards are drawn one after another from a standard deck without replacement. What is the probability that both are red?", ["1/4", "25/102", "13/51", "1/2"], 1, "quantitative", "hard", "26/52 for the first card, then 25/51 for the second. The product is 25/102."),
+  Q("The HCF of two numbers is 12 and their LCM is 360. If one number is 72, what is the other?", ["48", "60", "84", "96"], 1, "quantitative", "hard", "Product of the numbers = HCF x LCM = 12 x 360 = 4,320. 4,320 / 72 = 60."),
 ];
 
 const logical = [
-  Q("Find the next number: 2, 6, 12, 20, 30, ?", ["40", "42", "44", "48"], 1, "logical", "easy", "Differences grow by 2 each time: 4, 6, 8, 10, 12. 30 + 12 = 42."),
-  Q("If CAT is written as 3120 (C=3, A=1, T=20), how is DOG written?", ["4157", "4715", "4175", "4517"], 0, "logical", "easy", "D=4, O=15, G=7, giving 4157."),
-  Q("Which one does not belong: Apple, Banana, Carrot, Mango?", ["Apple", "Banana", "Carrot", "Mango"], 2, "logical", "easy", "Carrot is a vegetable; the others are fruits."),
-  Q("Pointing to a photograph, a man says, \"She is the daughter of my grandfather's only son.\" Who is she to the man?", ["Mother", "Sister", "Cousin", "Aunt"], 1, "logical", "medium", "Grandfather's only son is the man's father. His father's daughter is his sister."),
-  Q("A is to the north of B. C is to the east of B. In which direction is A with respect to C?", ["North-east", "North-west", "South-west", "South-east"], 1, "logical", "medium", "Place B at the origin, A above it and C to its right. A is up and to the left of C, which is north-west."),
-  Q("Find the next letter: A, C, F, J, O, ?", ["T", "U", "V", "W"], 1, "logical", "medium", "Gaps grow by one: +2, +3, +4, +5, +6. O + 6 = U."),
-  Q("Statements: All pens are tools. Some tools are heavy. Conclusions: I. Some pens are heavy. II. All tools are pens. Which follows?", ["Only I", "Only II", "Both I and II", "Neither I nor II"], 3, "logical", "hard", "The heavy tools may not be pens, so I does not follow. II reverses the first statement, so it does not follow either."),
-  Q("A clock shows 4:20. What time does its mirror image show?", ["7:40", "8:40", "7:20", "8:20"], 0, "logical", "medium", "Subtract from 11:60. 11:60 minus 4:20 = 7:40."),
-  Q("In a certain code, MANGO is written as NBOHP. How is APPLE written in that code?", ["BQQMF", "BQQLF", "BPQMF", "BQRMF"], 0, "logical", "easy", "Each letter moves one step forward: A>B, P>Q, P>Q, L>M, E>F."),
-  Q("Find the next number: 3, 7, 15, 31, 63, ?", ["125", "127", "129", "131"], 1, "logical", "easy", "Each term is double the previous one plus 1. 63 x 2 + 1 = 127."),
-  Q("In a row of 40 students, Ravi is 12th from the left. What is his position from the right?", ["27th", "28th", "29th", "30th"], 2, "logical", "easy", "Position from the right = 40 - 12 + 1 = 29."),
-  Q("A's mother is the sister of B's father. How is A related to B?", ["Brother", "Nephew", "Cousin", "Uncle"], 2, "logical", "medium", "B's father is A's maternal uncle, so A and B are cousins."),
-  Q("What is the angle between the hands of a clock at 3:30?", ["45 degrees", "60 degrees", "75 degrees", "90 degrees"], 2, "logical", "medium", "Hour hand: 3 x 30 + 15 = 105 degrees. Minute hand: 180 degrees. Difference: 75 degrees."),
-  Q("1 January 2025 is a Wednesday. What day of the week is 1 March 2025?", ["Friday", "Saturday", "Sunday", "Monday"], 1, "logical", "hard", "January has 31 days and February 2025 has 28, so 59 days pass. 59 mod 7 = 3. Wednesday + 3 = Saturday."),
+  Q("What comes next: 5, 10, 20, 40, ?", ["60", "70", "80", "90"], 2, "logical", "easy", "Each number is double the previous one. 40 x 2 = 80."),
+  Q("If TABLE is written as UBCMF in a code, how is CHAIR written?", ["DIBJS", "DIBKS", "DHBJS", "DIBJR"], 0, "logical", "easy", "Every letter moves one step forward: C>D, H>I, A>B, I>J, R>S."),
+  Q("Which one does not belong: Pen, Pencil, Marker, Eraser?", ["Pen", "Pencil", "Marker", "Eraser"], 3, "logical", "easy", "The other three write; an eraser removes writing."),
+  Q("Rahul walks 4 km north and then 3 km east. How far is he from where he started?", ["5 km", "6 km", "7 km", "1 km"], 0, "logical", "easy", "North and east are at right angles: the distance is the hypotenuse of a 3-4-5 triangle, 5 km."),
+  Q("Mango : Fruit :: Carrot : ?", ["Root", "Vegetable", "Plant", "Orange"], 1, "logical", "easy", "A mango is a fruit; a carrot is a vegetable."),
+  Q("What comes next: 2, 3, 5, 9, 17, ?", ["31", "33", "34", "35"], 1, "logical", "medium", "The gaps double: 1, 2, 4, 8, then 16. 17 + 16 = 33."),
+  Q("Pointing to a woman, Neha says, \"She is the only daughter of my mother's father.\" Who is the woman to Neha?", ["Aunt", "Mother", "Sister", "Grandmother"], 1, "logical", "medium", "Her mother's father's only daughter is her mother."),
+  Q("In a row of 50 students, Kabir is 17th from the left and Meera is 20th from the right. How many students sit between them?", ["11", "12", "13", "14"], 2, "logical", "medium", "50 - 17 - 20 = 13 students sit between them."),
+  Q("Statements: All laptops are devices. No device is cheap. Conclusions: I. No laptop is cheap. II. Some devices are laptops. Which follow?", ["Only I", "Only II", "Both I and II", "Neither"], 2, "logical", "medium", "Laptops sit inside devices, and no device is cheap, so I follows. Since all laptops are devices, some devices are laptops, so II follows too."),
+  Q("If each letter is worth its position in the alphabet, STAR = 58. What is MOON worth?", ["55", "56", "57", "58"], 2, "logical", "medium", "M = 13, O = 15, O = 15, N = 14. The total is 57."),
+  Q("Five friends sit in a row facing north. Aman is immediately to the left of Bela. Chitra is at the right end. Dev sits between Aman and Esha. Who is in the middle seat?", ["Dev", "Aman", "Bela", "Esha"], 1, "logical", "hard", "Bela must be right next to Aman, so Dev is on Aman's other side: Esha, Dev, Aman, Bela, Chitra. Aman is in the middle."),
+  Q("What is the angle between the hands of a clock at 9:40?", ["40 degrees", "50 degrees", "60 degrees", "70 degrees"], 1, "logical", "hard", "Hour hand: 9 x 30 + 40 x 0.5 = 290 degrees. Minute hand: 40 x 6 = 240 degrees. Difference: 50 degrees."),
+  Q("15 August 2026 is a Saturday. What day of the week is 2 October 2026?", ["Thursday", "Friday", "Saturday", "Sunday"], 1, "logical", "hard", "16 days remain in August, September has 30, plus 2: 48 days. 48 leaves a remainder of 6 when divided by 7. Saturday + 6 = Friday."),
+  Q("A clock shows 3:15. What time does its mirror image show?", ["8:45", "9:45", "8:15", "9:15"], 0, "logical", "hard", "Subtract from 11:60. 11:60 minus 3:15 = 8:45."),
+  Q("A cube is painted red on every face and then cut into 27 equal small cubes. How many small cubes have exactly two red faces?", ["8", "12", "6", "24"], 1, "logical", "hard", "Cubes with two painted faces sit on the edges, one per edge. A cube has 12 edges."),
 ];
 
 const verbal = [
-  Q("Choose the word closest in meaning to CANDID.", ["Secretive", "Frank", "Rude", "Polite"], 1, "verbal", "easy", "Candid means honest and direct, which is frank."),
-  Q("Choose the word opposite in meaning to SCARCE.", ["Rare", "Abundant", "Little", "Few"], 1, "verbal", "easy", "Scarce means in short supply; abundant is its opposite."),
-  Q("Fill in the blank: She is very good ___ mathematics.", ["in", "at", "on", "with"], 1, "verbal", "easy", "The idiomatic preposition is 'good at'."),
-  Q("Spot the error: Each of the students (A) / have submitted (B) / their assignment (C) / on time (D).", ["A", "B", "C", "D"], 1, "verbal", "medium", "'Each' is singular, so it should be 'has submitted'."),
-  Q("One word for 'a person who speaks many languages':", ["Linguist", "Polyglot", "Bilingual", "Orator"], 1, "verbal", "medium", "A polyglot speaks several languages. A linguist studies language."),
-  Q("What does the idiom 'to hit the nail on the head' mean?", ["To hurt someone", "To say exactly the right thing", "To finish a job", "To make a mistake"], 1, "verbal", "easy", "It means to describe a situation or problem exactly."),
-  Q("Choose the correctly spelt word.", ["Recieve", "Receive", "Receeve", "Reciev"], 1, "verbal", "easy", "The rule is 'i before e except after c': receive."),
-  Q("Doctor : Hospital :: Teacher : ?", ["Book", "School", "Student", "Class"], 1, "verbal", "easy", "A doctor works in a hospital; a teacher works in a school."),
-  Q("Choose the correct passive form: The committee approved the proposal.", ["The proposal is approved by the committee.", "The proposal was approved by the committee.", "The proposal has approved by the committee.", "The proposal approved by the committee."], 1, "verbal", "medium", "Past simple active becomes 'was/were + past participle'."),
-  Q("Choose the word opposite in meaning to VERBOSE.", ["Wordy", "Concise", "Loud", "Lengthy"], 1, "verbal", "medium", "Verbose means using too many words; concise is the opposite."),
-  Q("Choose the grammatically correct sentence.", ["Neither of the answers are correct.", "Neither of the answers is correct.", "Neither of the answer are correct.", "Neither answers is correct."], 1, "verbal", "medium", "'Neither of' takes a singular verb: 'is'."),
-  Q("Choose the word closest in meaning to METICULOUS.", ["Careless", "Careful", "Quick", "Lazy"], 1, "verbal", "easy", "Meticulous means showing great attention to detail."),
-  Q("Fill in the blank: He has been working here ___ 2019.", ["for", "since", "from", "by"], 1, "verbal", "easy", "'Since' is used with a point in time; 'for' with a duration."),
-  Q("Which word does not belong: Happy, Joyful, Cheerful, Gloomy?", ["Happy", "Joyful", "Cheerful", "Gloomy"], 3, "verbal", "easy", "Gloomy describes sadness; the other three describe happiness."),
+  Q("Choose the word closest in meaning to DILIGENT.", ["Lazy", "Hardworking", "Careless", "Rude"], 1, "verbal", "easy", "Diligent means working carefully and steadily."),
+  Q("Choose the word opposite in meaning to EXPAND.", ["Grow", "Shrink", "Spread", "Widen"], 1, "verbal", "easy", "To expand is to become larger; to shrink is the opposite."),
+  Q("Fill in the blank: The results will be announced ___ Monday.", ["in", "at", "on", "by"], 2, "verbal", "easy", "Days of the week take 'on'."),
+  Q("Choose the correctly spelt word.", ["Occassion", "Ocassion", "Occasion", "Ocasion"], 2, "verbal", "easy", "Occasion has a double c and a single s."),
+  Q("What is the plural of 'criterion'?", ["Criterions", "Criteria", "Criterias", "Criterion"], 1, "verbal", "easy", "Criterion is singular; criteria is the plural."),
+  Q("Spot the error: One of my friends (A) / have moved (B) / to Pune (C) / last month (D).", ["A", "B", "C", "D"], 1, "verbal", "medium", "'One of my friends' is singular, so it should be 'has moved'."),
+  Q("One word for 'a person who is new to a job or activity':", ["Expert", "Novice", "Veteran", "Mentor"], 1, "verbal", "medium", "A novice is a beginner."),
+  Q("What does the idiom 'to break the ice' mean?", ["To cause damage", "To start a conversation in an awkward situation", "To end a friendship", "To cool down"], 1, "verbal", "medium", "It means to make people feel comfortable and start talking."),
+  Q("Choose the correct passive form: The manager will approve the leave.", ["The leave is approved by the manager.", "The leave will be approved by the manager.", "The leave will approve by the manager.", "The leave was approved by the manager."], 1, "verbal", "medium", "'Will approve' becomes 'will be approved'."),
+  Q("Choose the grammatically correct sentence.", ["Each of the candidates have submitted their resume.", "Each of the candidates has submitted a resume.", "Each candidates has submitted a resume.", "Each of the candidate have submitted a resume."], 1, "verbal", "medium", "'Each' is singular and takes 'has'; 'candidates' stays plural after 'of'."),
+  Q("Choose the word closest in meaning to EPHEMERAL.", ["Eternal", "Short-lived", "Strong", "Dull"], 1, "verbal", "hard", "Ephemeral means lasting for a very short time."),
+  Q("Choose the word opposite in meaning to FRUGAL.", ["Thrifty", "Careful", "Wasteful", "Poor"], 2, "verbal", "hard", "Frugal means careful with money; wasteful is the opposite."),
+  Q("Improve the sentence if needed: Hardly had I reached the station when the train left.", ["when the train had left", "than the train left", "No improvement needed", "then the train left"], 2, "verbal", "hard", "'Hardly had ... when' is the correct pair, so the sentence is already right."),
+  Q("Fill both blanks: ___ the rain, the match ___ on time.", ["Although / started", "Despite / started", "Despite of / was started", "Inspite / start"], 1, "verbal", "hard", "'Despite' is followed directly by a noun, and the match 'started'."),
+  Q("What does UBIQUITOUS mean?", ["Rare", "Present everywhere", "Ancient", "Hidden"], 1, "verbal", "hard", "Ubiquitous means found everywhere."),
 ];
 
-const salesTable = [
-  ["Quarter", "Units sold"],
-  ["Q1", "120"],
-  ["Q2", "150"],
-  ["Q3", "90"],
-  ["Q4", "180"],
-];
-const marksTable = [
-  ["Student", "Test 1", "Test 2"],
-  ["A", "60", "80"],
-  ["B", "70", "50"],
-  ["C", "90", "85"],
-  ["D", "40", "70"],
-  ["E", "75", "75"],
+const offersTable = [
+  ["Branch", "Placement offers (2025)"],
+  ["CSE", "120"],
+  ["ECE", "80"],
+  ["ME", "50"],
+  ["CE", "30"],
+  ["EE", "60"],
 ];
 const budgetTable = [
-  ["Item", "Share of income"],
-  ["Rent", "30%"],
-  ["Food", "25%"],
-  ["Transport", "10%"],
-  ["Savings", "20%"],
-  ["Other", "15%"],
+  ["Expense", "Per month (Rs)"],
+  ["Rent", "6,000"],
+  ["Food", "4,500"],
+  ["Travel", "1,500"],
+  ["Internet", "500"],
+  ["Other", "2,500"],
 ];
-const plantTable = [
-  ["Year", "Plant P (000s)", "Plant Q (000s)"],
-  ["2022", "40", "50"],
-  ["2023", "55", "45"],
-  ["2024", "75", "60"],
+const mockTable = [
+  ["Student", "Mock test 1", "Mock test 2"],
+  ["Aarav", "64", "80"],
+  ["Diya", "72", "66"],
+  ["Kabir", "55", "70"],
+  ["Sana", "88", "84"],
 ];
 
 const dataInterpretation = [
-  Q("The table shows quarterly sales of a company. What were the total sales for the year?", ["520", "540", "560", "600"], 1, "data interpretation", "easy", "120 + 150 + 90 + 180 = 540.", { table: salesTable }),
-  Q("The table shows quarterly sales. By what percentage did sales rise from Q3 to Q4?", ["50%", "90%", "100%", "200%"], 2, "data interpretation", "medium", "(180 - 90) / 90 = 1, which is a 100% rise.", { table: salesTable }),
-  Q("The table shows quarterly sales. Q2 sales are approximately what percentage of the annual total?", ["25%", "27.8%", "30%", "33.3%"], 1, "data interpretation", "medium", "150 / 540 = 0.278, about 27.8%.", { table: salesTable }),
-  Q("The table shows marks of five students in two tests. Who improved the most from Test 1 to Test 2?", ["A", "C", "D", "E"], 2, "data interpretation", "easy", "A improved by 20, D by 30, C fell by 5, E stayed the same.", { table: marksTable }),
-  Q("The table shows marks of five students. What is the average mark in Test 1?", ["65", "67", "68", "70"], 1, "data interpretation", "easy", "(60 + 70 + 90 + 40 + 75) / 5 = 335 / 5 = 67.", { table: marksTable }),
-  Q("The table shows marks of five students. How many students scored above 70 in Test 2?", ["2", "3", "4", "5"], 1, "data interpretation", "medium", "A (80), C (85) and E (75) are above 70. D scored exactly 70.", { table: marksTable }),
-  Q("A family earns Rs 50,000 a month and spends as shown. How much goes to food?", ["Rs 10,000", "Rs 12,500", "Rs 15,000", "Rs 7,500"], 1, "data interpretation", "easy", "25% of 50,000 = Rs 12,500.", { table: budgetTable }),
-  Q("A family spends as shown in the table. What is the ratio of rent to savings?", ["2:3", "3:2", "3:5", "5:3"], 1, "data interpretation", "easy", "30% : 20% simplifies to 3:2.", { table: budgetTable }),
-  Q("A family earns Rs 50,000 and spends as shown. If income rises to Rs 60,000 with the same shares, how much more goes to savings?", ["Rs 1,000", "Rs 2,000", "Rs 3,000", "Rs 12,000"], 1, "data interpretation", "medium", "Savings rise from 10,000 to 12,000, an increase of Rs 2,000.", { table: budgetTable }),
-  Q("The table shows production at two plants. What was the total production of Plant P over the three years, in thousands?", ["160", "165", "170", "180"], 2, "data interpretation", "easy", "40 + 55 + 75 = 170.", { table: plantTable }),
-  Q("The table shows production at two plants. In which year was the gap between the plants the largest?", ["2022", "2023", "2024", "Same every year"], 2, "data interpretation", "medium", "Gaps are 10, 10 and 15 thousand. The largest is in 2024.", { table: plantTable }),
-  Q("The table shows production at two plants. By what percentage did Plant Q grow from 2022 to 2024?", ["10%", "20%", "25%", "30%"], 1, "data interpretation", "medium", "(60 - 50) / 50 = 0.2, a 20% rise.", { table: plantTable }),
+  Q("The table shows placement offers by branch. How many offers were there in total?", ["320", "330", "340", "350"], 2, "data interpretation", "easy", "120 + 80 + 50 + 30 + 60 = 340.", { table: offersTable }),
+  Q("The table shows placement offers by branch. Roughly what percentage of all offers went to CSE?", ["30%", "35%", "40%", "45%"], 1, "data interpretation", "easy", "120 out of 340 is about 35%.", { table: offersTable }),
+  Q("The table shows placement offers by branch. What is the ratio of ECE offers to ME offers?", ["5:8", "8:5", "4:3", "3:4"], 1, "data interpretation", "medium", "80 : 50 simplifies to 8 : 5.", { table: offersTable }),
+  Q("The table shows placement offers by branch. If EE offers rise by 25% next year and the others stay the same, what will the total be?", ["350", "355", "360", "365"], 1, "data interpretation", "medium", "EE goes from 60 to 75, so the total becomes 340 + 15 = 355.", { table: offersTable }),
+  Q("The table shows placement offers by branch. Leaving out the branch with the most and the branch with the fewest offers, what is the average of the rest?", ["60", "63.3", "66.7", "70"], 1, "data interpretation", "hard", "Leave out CSE (120) and CE (30). (80 + 50 + 60) / 3 = 63.3.", { table: offersTable }),
+  Q("The table shows a student's monthly expenses. What is the total for the month?", ["Rs 14,000", "Rs 14,500", "Rs 15,000", "Rs 15,500"], 2, "data interpretation", "easy", "6,000 + 4,500 + 1,500 + 500 + 2,500 = Rs 15,000.", { table: budgetTable }),
+  Q("The table shows a student's monthly expenses. What share of the total goes to rent?", ["30%", "35%", "40%", "45%"], 2, "data interpretation", "easy", "6,000 out of 15,000 is 40%.", { table: budgetTable }),
+  Q("The table shows a student's monthly expenses. Food and travel together are what fraction of the total?", ["1/3", "2/5", "3/5", "1/2"], 1, "data interpretation", "medium", "4,500 + 1,500 = 6,000, which is 6,000 / 15,000 = 2/5.", { table: budgetTable }),
+  Q("The table shows a student's monthly expenses. In a pie chart of these expenses, what angle would Internet take?", ["6 degrees", "12 degrees", "18 degrees", "24 degrees"], 1, "data interpretation", "medium", "500 / 15,000 x 360 = 12 degrees.", { table: budgetTable }),
+  Q("The table shows a student's monthly expenses. If rent rises by 10% and food by 20%, what is the new total?", ["Rs 16,200", "Rs 16,500", "Rs 16,800", "Rs 17,000"], 1, "data interpretation", "hard", "Rent adds 600 and food adds 900. 15,000 + 1,500 = Rs 16,500.", { table: budgetTable }),
+  Q("The table shows mock test marks. Who scored the highest in Mock test 2?", ["Aarav", "Diya", "Kabir", "Sana"], 3, "data interpretation", "easy", "Sana scored 84, the highest in the second test.", { table: mockTable }),
+  Q("The table shows mock test marks. What is Diya's average across the two tests?", ["68", "69", "70", "71"], 1, "data interpretation", "easy", "(72 + 66) / 2 = 69.", { table: mockTable }),
+  Q("The table shows mock test marks. Who improved the most from the first test to the second?", ["Aarav", "Diya", "Kabir", "Sana"], 0, "data interpretation", "medium", "Aarav gained 16, Kabir 15, while Diya and Sana dropped.", { table: mockTable }),
+  Q("The table shows mock test marks. What is the class average in Mock test 1?", ["68.5", "69.75", "70.25", "71"], 1, "data interpretation", "medium", "(64 + 72 + 55 + 88) / 4 = 279 / 4 = 69.75.", { table: mockTable }),
+  Q("The table shows mock test marks. By what percentage did Kabir's marks rise from the first test to the second?", ["15%", "21.4%", "27.3%", "30%"], 2, "data interpretation", "hard", "(70 - 55) / 55 = 0.273, about 27.3%.", { table: mockTable }),
 ];
-
-function withIds(prefix, questions) {
-  return questions.map((q, i) => ({ ...q, id: `${prefix}${i + 1}` }));
-}
 
 function pick(list, indexes) {
   return indexes.map((i) => list[i]);
 }
 
+function byDifficulty(list, level) {
+  return list.filter((q) => q.difficulty === level);
+}
+
 export function seedSets() {
   const now = new Date().toISOString();
-  const quant = withIds("qa", quantitative);
-  const logic = withIds("lr", logical);
-  const verb = withIds("va", verbal);
-  const di = withIds("di", dataInterpretation);
   const make = (id, title, description, questionTime, questions) => ({
     id,
     title,
@@ -131,17 +127,21 @@ export function seedSets() {
     updatedAt: now,
     questions: questions.map((q, i) => ({ ...q, id: `${id}_${i + 1}` })),
   });
+  const level = (name) => [...byDifficulty(quantitative, name), ...byDifficulty(logical, name), ...byDifficulty(verbal, name), ...byDifficulty(dataInterpretation, name)];
   return [
-    make("seed_lightning", "Lightning Round (demo)", "Five quick questions, 10 seconds each. Ideal for a first game.", 10, [quant[0], logic[0], verb[0], di[0], quant[7]]),
-    make("seed_mix", "Placement Mix 1", "24 mixed questions across all four topics, the way a real placement test feels.", 20, [
-      ...pick(quant, [1, 2, 3, 5, 8, 13]),
-      ...pick(logic, [1, 3, 5, 7, 10, 13]),
-      ...pick(verb, [1, 3, 4, 8, 9, 10]),
-      ...pick(di, [1, 2, 5, 6, 8, 10]),
+    make("seed_lightning", "Lightning Round (demo)", "Five quick questions, 10 seconds each. Ideal for a first game.", 10, [quantitative[0], logical[0], verbal[0], dataInterpretation[0], quantitative[2]]),
+    make("seed_mix", "Placement Mix 1", "24 mixed questions: two easy, two medium and two hard from each topic.", 20, [
+      ...pick(quantitative, [1, 2, 5, 6, 10, 11]),
+      ...pick(logical, [1, 2, 5, 6, 10, 11]),
+      ...pick(verbal, [1, 2, 5, 6, 10, 11]),
+      ...pick(dataInterpretation, [1, 6, 2, 3, 4, 9]),
     ]),
-    make("seed_quant", "Quantitative Aptitude Pack", "Arithmetic, percentages, ratios, time and work, probability.", 25, quant),
-    make("seed_logic", "Logical Reasoning Pack", "Series, coding, directions, blood relations, syllogisms, clocks and calendars.", 25, logic),
-    make("seed_verbal", "Verbal Ability Pack", "Vocabulary, grammar, idioms and sentence correction.", 15, verb),
-    make("seed_di", "Data Interpretation Pack", "Tables with percentages, averages and growth.", 30, di),
+    make("seed_easy", "Easy warm-up", `${level("easy").length} easy questions from all four topics. Good for a first session.`, 15, level("easy")),
+    make("seed_medium", "Medium round", `${level("medium").length} medium questions from all four topics. The level most placement tests sit at.`, 25, level("medium")),
+    make("seed_hard", "Hard round", `${level("hard").length} hard questions from all four topics. For the final rounds of a league.`, 40, level("hard")),
+    make("seed_quant", "Quantitative Aptitude Pack", "Speed, work, interest, ratios, averages and probability.", 25, quantitative),
+    make("seed_logic", "Logical Reasoning Pack", "Series, coding, directions, relations, seating, clocks and calendars.", 25, logical),
+    make("seed_verbal", "Verbal Ability Pack", "Vocabulary, grammar, idioms and sentence correction.", 15, verbal),
+    make("seed_di", "Data Interpretation Pack", "Tables with totals, shares, ratios and growth.", 30, dataInterpretation),
   ];
 }

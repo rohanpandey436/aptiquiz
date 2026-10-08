@@ -10,7 +10,7 @@ const PERIODS = [
   ["all", "All time"],
 ];
 
-const rankChip = (i) => (i === 0 ? "bg-accent text-ink" : i === 1 ? "bg-ink text-white" : i === 2 ? "bg-muted text-white" : "bg-surface-2 text-ink");
+const rankChip = (i) => (i === 0 ? "bg-accent text-ink" : i === 1 ? "bg-ink text-canvas" : i === 2 ? "bg-muted text-white" : "bg-surface-2 text-ink");
 
 function timeAgo(iso) {
   const diff = Date.now() - new Date(iso).getTime();
@@ -56,9 +56,9 @@ export default function League() {
           <div aria-hidden="true" className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 animate-float rounded-[28px] bg-accent/90" />
           <div className="relative grid gap-6 md:grid-cols-[1.2fr_1fr] md:items-center">
             <div>
-              <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-brand-100">College league</p>
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-onblue">College league</p>
               <h1 className="display mt-2 text-4xl font-extrabold md:text-5xl">Every game counts for your college.</h1>
-              <p className="mt-3 max-w-xl text-brand-100">
+              <p className="mt-3 max-w-xl text-onblue">
                 Nothing to sign up for. The host picks a college when creating a room. When the game ends, every player's points are added to that college.
                 Play more, climb higher.
               </p>
@@ -69,7 +69,7 @@ export default function League() {
                   Host a game for your college
                 </Button>
               </Link>
-              <p className="text-sm text-brand-100">{data ? `${data.games} games counted in this period` : "Loading"}</p>
+              <p className="text-sm text-onblue">{data ? `${data.games} games counted in this period` : "Loading"}</p>
             </div>
           </div>
         </div>
@@ -102,7 +102,7 @@ export default function League() {
               ) : (
                 <ol className="mt-4 flex flex-col gap-2">
                   {colleges.map((c, i) => (
-                    <li key={c.college} className={`flex items-center gap-3 rounded-xl border px-3 py-3 ${i === 0 ? "border-accent/40 bg-accent-soft/60 border-l-4 border-l-accent" : "border-line bg-white"}`}>
+                    <li key={c.college} className={`flex items-center gap-3 rounded-xl border px-3 py-3 ${i === 0 ? "border-accent/40 bg-accent-soft/60 border-l-4 border-l-accent" : "border-line bg-card"}`}>
                       <span className={`display flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sm font-bold ${rankChip(i)}`}>{i + 1}</span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate font-bold">{c.college}</span>

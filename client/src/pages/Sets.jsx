@@ -125,7 +125,7 @@ export default function Sets() {
     return (
       <Shell>
         <Card as="form" onSubmit={unlock} className="mx-auto max-w-md">
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-brand-800">Faculty</p>
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-brand-ink">Faculty</p>
           <h1 className="display mt-2 text-3xl font-extrabold">Question editor</h1>
           <p className="mt-1 text-sm text-muted">This college has locked the editor. Enter the host passcode to create and edit question sets.</p>
           <div className="mt-5 flex flex-col gap-4">
@@ -154,7 +154,7 @@ export default function Sets() {
     <Shell>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-brand-800">Questions</p>
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-brand-ink">Questions</p>
           <h1 className="display mt-2 text-4xl font-extrabold">Question sets</h1>
           <p className="mt-2 text-muted">Make a set once and use it in as many games as you like. You can copy and edit any built-in set.</p>
         </div>
@@ -308,7 +308,7 @@ function Editor({ set, onChange, onSave, onCancel, busy, message }) {
                 <button type="button" onClick={() => move(i, 1)} className="px-1.5 text-xs text-muted hover:text-ink" aria-label="Move down" disabled={locked}>
                   &#9660;
                 </button>
-                <button type="button" onClick={() => removeQuestion(i)} className="px-1.5 text-xs text-muted hover:text-bad" aria-label="Delete question" disabled={locked}>
+                <button type="button" onClick={() => removeQuestion(i)} className="px-1.5 text-xs text-muted hover:text-bad-ink" aria-label="Delete question" disabled={locked}>
                   &#10005;
                 </button>
               </li>
@@ -316,10 +316,10 @@ function Editor({ set, onChange, onSave, onCancel, busy, message }) {
           </ol>
           {!locked ? (
             <details className="mt-4 text-sm" open>
-              <summary className="cursor-pointer font-bold text-brand-700">Add many at once</summary>
+              <summary className="cursor-pointer font-bold text-brand-ink">Add many at once</summary>
               <p className="mt-2 text-xs text-muted">Write a question, its options like "A) 30", then "Answer: B". Leave an empty line between questions. Or paste JSON.</p>
               <textarea className={`${inputClass} mt-2 h-40 font-mono text-xs`} value={importText} onChange={(e) => setImportText(e.target.value)} aria-label="Questions to import" placeholder={QUICK_EXAMPLE} spellCheck={false} />
-              {importError ? <p className="mt-1 text-xs font-bold text-bad">{importError}</p> : null}
+              {importError ? <p className="mt-1 text-xs font-bold text-bad-ink">{importError}</p> : null}
               <div className="mt-2 flex flex-wrap gap-2">
                 <Button size="sm" variant="secondary" onClick={importPlain}>
                   Add from text
@@ -346,7 +346,7 @@ function Editor({ set, onChange, onSave, onCancel, busy, message }) {
                     <span className="w-6 text-sm font-bold text-muted">{LETTERS[i]}</span>
                     <input className={inputClass} value={opt} onChange={(e) => updateQuestion(active, { options: q.options.map((o, idx) => (idx === i ? e.target.value : o)) })} maxLength={200} aria-label={`Option ${LETTERS[i]} text`} />
                     {q.options.length > 2 ? (
-                      <button type="button" onClick={() => updateQuestion(active, { options: q.options.filter((_, idx) => idx !== i), correct: Math.min(q.correct, q.options.length - 2) })} className="px-1 text-muted hover:text-bad" aria-label={`Remove option ${LETTERS[i]}`}>
+                      <button type="button" onClick={() => updateQuestion(active, { options: q.options.filter((_, idx) => idx !== i), correct: Math.min(q.correct, q.options.length - 2) })} className="px-1 text-muted hover:text-bad-ink" aria-label={`Remove option ${LETTERS[i]}`}>
                         &#10005;
                       </button>
                     ) : null}

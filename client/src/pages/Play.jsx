@@ -210,9 +210,9 @@ export default function Play() {
       <Shell full>
         <div className="mx-auto max-w-md px-4 pb-10">
           <div className="-mx-4 rounded-b-[32px] bg-brand-gradient px-6 pb-16 pt-8 text-white shadow-pop">
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-brand-100">Player</p>
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-onblue">Player</p>
             <h1 className="display mt-2 text-4xl font-extrabold">Join a game</h1>
-            <p className="mt-2 text-brand-100">Get the room code from your host.</p>
+            <p className="mt-2 text-onblue">Get the room code from your host.</p>
           </div>
           <Card as="form" onSubmit={submitJoin} className="relative -mt-10 rounded-3xl border-0 shadow-pop md:p-7">
             <div className="flex flex-col gap-4">
@@ -232,7 +232,7 @@ export default function Play() {
                 <input id="name" className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" maxLength={20} autoComplete="nickname" />
               </Field>
               {error ? (
-                <p role="alert" className="rounded-xl bg-bad-bg px-3 py-2 text-sm font-bold text-bad">
+                <p role="alert" className="rounded-xl bg-bad-bg px-3 py-2 text-sm font-bold text-bad-ink">
                   {error}
                 </p>
               ) : null}
@@ -373,10 +373,10 @@ function StandingsPanel({ standings, me, compact = false }) {
   }
   if (compact) {
     return (
-      <details className="rounded-card border border-line bg-white p-4 shadow-card lg:hidden">
+      <details className="rounded-card border border-line bg-card p-4 shadow-card lg:hidden">
         <summary className="cursor-pointer list-none">
           <StandingsSummary standings={standings} />
-          <p className="mt-2 text-xs font-bold text-brand-700">Tap to see the top five</p>
+          <p className="mt-2 text-xs font-bold text-brand-ink">Tap to see the top five</p>
         </summary>
         <div className="mt-3">
           <Leaderboard entries={standings.top} highlightId={me?.id} limit={5} dense showLast={false} />
@@ -401,7 +401,7 @@ function QuestionView({ question, selected, lock, progress, standings, me, onAns
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
       <div className="flex flex-col gap-4">
-        <div className="sticky top-[57px] z-10 -mx-4 bg-white/95 px-4 pb-3 pt-2 backdrop-blur">
+        <div className="sticky top-[57px] z-10 -mx-4 bg-canvas/95 px-4 pb-3 pt-2 backdrop-blur">
           <div className="mb-2 flex items-center justify-between">
             <Badge tone="brand">
               {question.qIndex + 1} of {question.total}
@@ -461,7 +461,7 @@ function RevealView({ reveal, me }) {
   const you = reveal.you;
   const tone = you.answered ? (you.correct ? "good" : "bad") : "neutral";
   const title = !you.answered ? "No answer" : you.correct ? "Correct" : "Not this time";
-  const toneClass = tone === "good" ? "bg-good text-white" : tone === "bad" ? "bg-bad text-white" : "bg-ink text-white";
+  const toneClass = tone === "good" ? "bg-good text-white" : tone === "bad" ? "bg-bad text-white" : "bg-ink text-canvas";
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
       <div className="flex flex-col gap-4">
@@ -556,10 +556,10 @@ function ReportCard({ end, me }) {
           <div aria-hidden="true" className="dot-grid pointer-events-none absolute inset-0 opacity-50" />
           <div aria-hidden="true" className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rotate-12 rounded-[24px] bg-accent/90" />
           <div className="relative">
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-brand-100">Final result</p>
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-onblue">{end.practice ? "Practice result, not counted in the league" : "Final result"}</p>
             <p className="mt-1 text-sm font-bold">{r.name}</p>
             <p className="display mt-2 text-5xl font-extrabold">
-              {ordinal(r.rank)} <span className="text-xl font-semibold text-brand-100">of {r.players}</span>
+              {ordinal(r.rank)} <span className="text-xl font-semibold text-onblue">of {r.players}</span>
             </p>
             <p className="mt-1 text-2xl font-extrabold tabular text-accent">{r.score} points</p>
             <div className="mt-5 flex flex-wrap gap-2">
@@ -569,11 +569,11 @@ function ReportCard({ end, me }) {
                 ["Fastest", r.fastestCorrectS === null ? "-" : `${r.fastestCorrectS}s`],
               ].map(([label, value]) => (
                 <span key={label} className="rounded-xl bg-white/15 px-3 py-2 text-sm font-bold">
-                  <span className="text-brand-100">{label}</span> <span className="tabular">{value}</span>
+                  <span className="text-onblue">{label}</span> <span className="tabular">{value}</span>
                 </span>
               ))}
             </div>
-            <p className="display mt-6 text-right text-sm font-bold text-brand-100">AptiQuiz</p>
+            <p className="display mt-6 text-right text-sm font-bold text-onblue">AptiQuiz</p>
           </div>
         </div>
 

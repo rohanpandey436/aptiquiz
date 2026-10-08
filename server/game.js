@@ -12,6 +12,7 @@ export const BONUS_POINTS = 500;
 export const EXAM_PENALTY = 250;
 export const MAX_PLAYERS = 60;
 export const MAX_ROOMS = 300;
+export const DIFFICULTIES = ["easy", "medium", "hard"];
 const ROOM_TTL_MS = 3 * 60 * 60 * 1000;
 const ENDED_TTL_MS = 60 * 60 * 1000;
 const LOBBY_TTL_MS = 20 * 60 * 1000;
@@ -62,21 +63,30 @@ export class GameManager {
     throw new Error("Could not allocate a room code");
   }
 
-  createRoom({ college, setId, questionTime, examMode, autoAdvance = true, practice = false }) {
+  questionsFor(set, difficulty) {
+    const level = DIFFICULTIES.includes(difficulty) ? difficulty : "mixed";
+    const chosen = level === "mixed" ? set.questions : set.questions.filter((q) => q.difficulty === level);
+    return { level, questions: chosen.map((q) => ({ ...q })) };
+  }
+
+  createRoom({ college, setId, questionTime, examMode, autoAdvance = true, practice = false, difficulty = "mixed" }) {
     if (this.rooms.size >= MAX_ROOMS) return { error: "The server is busy right now. Try again in a few minutes." };
     const set = store.getSet(setId);
     if (!set) return { error: "That question set no longer exists" };
+    const picked = this.questionsFor(set, difficulty);
+    if (!picked.questions.length) return { error: `This set has no ${picked.level} questions. Pick another level.` };
     const code = this.genCode();
     const room = {
       code,
       college: college || "Lloyd Institute",
       setId: set.id,
       setTitle: set.title,
-      questions: set.questions.map((q) => ({ ...q })),
+      questions: picked.questions,
       settings: {
         questionTime: questionTime || set.questionTime || 20,
         examMode: !!examMode,
         autoAdvance: !!autoAdvance,
+        difficulty: picked.level,
       },
       practice: !!practice,
       status: "lobby",
@@ -97,15 +107,20 @@ export class GameManager {
     return { room };
   }
 
-  updateRoom(room, { setId, questionTime, examMode, college, autoAdvance }) {
+  updateRoom(room, { setId, questionTime, examMode, college, autoAdvance, difficulty }) {
     if (room.status !== "lobby") return { error: "Settings can only change before the game starts" };
-    if (setId && setId !== room.setId) {
-      const set = store.getSet(setId);
+    const wantsSet = setId && setId !== room.setId;
+    const wantsLevel = difficulty && difficulty !== room.settings.difficulty;
+    if (wantsSet || wantsLevel) {
+      const set = store.getSet(wantsSet ? setId : room.setId);
       if (!set) return { error: "That question set no longer exists" };
+      const picked = this.questionsFor(set, wantsLevel ? difficulty : room.settings.difficulty);
+      if (!picked.questions.length) return { error: `This set has no ${picked.level} questions. Pick another level.` };
       room.setId = set.id;
       room.setTitle = set.title;
-      room.questions = set.questions.map((q) => ({ ...q }));
-      if (!questionTime) room.settings.questionTime = set.questionTime || 20;
+      room.questions = picked.questions;
+      room.settings.difficulty = picked.level;
+      if (wantsSet && !questionTime) room.settings.questionTime = set.questionTime || 20;
     }
     if (questionTime) room.settings.questionTime = questionTime;
     if (typeof examMode === "boolean") room.settings.examMode = examMode;
@@ -792,7 +807,7 @@ export class GameManager {
   }
 
   playerEndPayload(room, player) {
-    return { report: this.playerReport(room, player), top: this.leaderboard(room).slice(0, 10), scoring: this.scoringRule(room) };
+    return { report: this.playerReport(room, player), top: this.leaderboard(room).slice(0, 10), scoring: this.scoringRule(room), practice: room.practice };
   }
 
   hostEndPayload(room, insights) {

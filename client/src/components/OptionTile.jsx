@@ -27,14 +27,14 @@ export function OptionTile({ index, text, state = "idle", count, total, onClick,
     idle: `${color} border-transparent text-white shadow-[0_12px_24px_-14px_rgba(15,23,42,0.55)] ${interactive ? "hover:-translate-y-0.5 hover:brightness-110 hover:shadow-[0_16px_28px_-14px_rgba(15,23,42,0.6)] active:translate-y-0 active:scale-[0.99] active:shadow-none" : ""} ${disabled ? "opacity-60 saturate-50" : ""}`,
     selected: `${color} border-ink text-white ring-4 ring-ink/15 shadow-none animate-pop`,
     correct: "bg-good border-good text-white animate-pop",
-    wrong: "bg-bad-bg border-bad text-bad",
+    wrong: "bg-bad-bg border-bad text-bad-ink",
     dim: "bg-surface-2 border-line text-muted",
   };
   const chipStyles = {
     idle: "bg-white/20 text-white",
     selected: "bg-white/20 text-white",
-    correct: "bg-white text-good",
-    wrong: "bg-white text-bad",
+    correct: "bg-white text-good-ink",
+    wrong: "bg-white text-bad-ink",
     dim: "bg-white text-muted",
   };
   const pct = total ? Math.round((100 * (count || 0)) / total) : 0;

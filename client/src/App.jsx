@@ -5,6 +5,7 @@ import HostCreate from "./pages/HostCreate.jsx";
 import HostRoom from "./pages/HostRoom.jsx";
 import Play from "./pages/Play.jsx";
 import League from "./pages/League.jsx";
+import Practice from "./pages/Practice.jsx";
 import Sets from "./pages/Sets.jsx";
 import NotFound from "./pages/NotFound.jsx";
 
@@ -27,6 +28,7 @@ export default function App() {
         <Route path="/watch/:code" element={<HostRoom spectator />} />
         <Route path="/play" element={<Play />} />
         <Route path="/play/:code" element={<Play />} />
+        <Route path="/practice" element={<Practice />} />
         <Route path="/league" element={<League />} />
         <Route path="/sets" element={<Sets />} />
         <Route path="*" element={<NotFound />} />

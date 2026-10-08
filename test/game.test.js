@@ -1,8 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { GameManager, BASE_POINTS, BONUS_POINTS, EXAM_PENALTY, RTT_CAP_MS } from "../server/game.js";
+import fs from "node:fs";
 import * as store from "../server/store.js";
 
+fs.rmSync(new URL("../data-test", import.meta.url), { recursive: true, force: true });
 store.init("./data-test");
 
 const managers = [];
@@ -275,6 +277,30 @@ test("spectators get standings and question stats but never private player repor
   assert.equal("players" in forScreen.insights, false);
   assert.equal("fairness" in forScreen.insights, false);
   assert.equal(forScreen.leaderboard.length, 2);
+});
+
+test("a difficulty filter keeps only that level and refuses an empty result", () => {
+  const io = fakeIo();
+  const game = new GameManager(io);
+  managers.push(game);
+  const hard = game.createRoom({ setId: "seed_mix", difficulty: "hard", practice: true });
+  assert.ok(hard.room.questions.length > 0);
+  assert.ok(hard.room.questions.every((q) => q.difficulty === "hard"));
+  assert.equal(hard.room.settings.difficulty, "hard");
+  const none = game.createRoom({ setId: "seed_easy", difficulty: "hard", practice: true });
+  assert.match(none.error, /no hard questions/);
+  const mixed = game.createRoom({ setId: "seed_mix", difficulty: "nonsense", practice: true });
+  assert.equal(mixed.room.settings.difficulty, "mixed");
+  assert.equal(mixed.room.questions.length, 24);
+});
+
+test("a practice room is never persisted to the league", () => {
+  const { game, room } = setup();
+  const before = store.recentGames(100).length;
+  game.startGame(room);
+  game.closeQuestion(room);
+  game.endGame(room);
+  assert.equal(store.recentGames(100).length, before);
 });
 
 test("answer keys are hidden for sets that are being played", () => {
