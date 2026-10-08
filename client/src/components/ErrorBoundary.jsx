@@ -1,4 +1,5 @@
 import { Component } from "react";
+import { PetDog } from "./NetworkPet.jsx";
 
 export class ErrorBoundary extends Component {
   constructor(props) {
@@ -18,14 +19,9 @@ export class ErrorBoundary extends Component {
     if (!this.state.error) return this.props.children;
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-canvas px-6 text-center">
-        <div className="loader" aria-hidden="true">
-          <i />
-          <i />
-          <i />
-          <b />
-        </div>
-        <h1 className="display text-3xl font-extrabold text-ink">Something went wrong on this screen</h1>
-        <p className="max-w-md text-muted">Your game and score are safe on the server. Reload to pick up where you were.</p>
+        <PetDog className="w-56 max-w-[70vw]" />
+        <h1 className="display text-3xl font-extrabold text-ink">Something tripped over a cable.</h1>
+        <p className="max-w-md text-muted">This screen hit a snag. Your game and score are safe on the server. Reload to pick up where you were.</p>
         <button
           type="button"
           onClick={() => window.location.reload()}

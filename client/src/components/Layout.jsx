@@ -1,7 +1,11 @@
+import { useEffect, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { useConnection } from "../lib/socket.js";
 import { useTheme } from "../lib/theme.js";
 import { useOnline } from "../lib/network.js";
+import { NetworkPet } from "./NetworkPet.jsx";
+
+const LONG_DISCONNECT_MS = 8000;
 
 export function Logo({ className = "" }) {
   return (
@@ -46,8 +50,19 @@ function ThemeToggle() {
 export function Shell({ children, wide = false, nav = true, full = false, sticky = true }) {
   const connected = useConnection();
   const online = useOnline();
+  const [longGone, setLongGone] = useState(false);
+  useEffect(() => {
+    if (connected) {
+      setLongGone(false);
+      return undefined;
+    }
+    const id = setTimeout(() => setLongGone(true), LONG_DISCONNECT_MS);
+    return () => clearTimeout(id);
+  }, [connected]);
   return (
     <div className="flex min-h-dvh flex-col bg-canvas">
+      {!online ? <NetworkPet mode="offline" /> : null}
+      {online && !connected && longGone ? <NetworkPet mode="reconnecting" onRetry={() => window.location.reload()} retryLabel="Refresh" /> : null}
       <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-card focus:px-3 focus:py-2">
         Skip to content
       </a>
