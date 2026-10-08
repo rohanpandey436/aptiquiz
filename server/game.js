@@ -380,6 +380,7 @@ export class GameManager {
       durationMs: room.q.durationMs,
       remainingMs: Math.max(0, Math.round(room.q.deadline - this.now())),
       scoring: this.scoringRule(room),
+      practice: room.practice,
     };
   }
 
@@ -597,6 +598,7 @@ export class GameManager {
       avgElapsedMs: round.avgElapsedMs,
       autoAdvance: room.settings.autoAdvance,
       autoNextMs: this.autoNextMs(room),
+      practice: room.practice,
     };
   }
 
@@ -637,6 +639,13 @@ export class GameManager {
       if (player.connected && player.socketId) this.io.to(player.socketId).emit("question:reveal", this.playerRevealPayload(room, player));
     }
     this.emitToScreens(room, "question:reveal", this.hostRevealPayload(room));
+  }
+
+  endPractice(room, player) {
+    if (!room.practice) return { error: "Only a practice session can be ended by its player" };
+    if (!room.players.has(player.id)) return { error: "You are not in this room" };
+    this.endGame(room);
+    return { ok: true };
   }
 
   closeRound(room) {

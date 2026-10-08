@@ -316,6 +316,22 @@ test("the league names a best player even when every score is zero", () => {
   assert.equal(row.bestScore, 0);
 });
 
+test("a practice player can end the session early, a hosted-game player cannot", () => {
+  const io = fakeIo();
+  const game = new GameManager(io);
+  managers.push(game);
+  const { room } = game.createRoom({ setId: "seed_lightning", practice: true, autoAdvance: false });
+  const player = game.joinPlayer(room, fakeSocket("solo"), "Rohan").player;
+  game.startGame(room);
+  assert.equal(game.endPractice(room, player).ok, true);
+  assert.equal(room.status, "ended");
+  const hosted = game.createRoom({ setId: "seed_lightning", practice: false, autoAdvance: false }).room;
+  const other = game.joinPlayer(hosted, fakeSocket("p1"), "Asha").player;
+  game.startGame(hosted);
+  assert.match(game.endPractice(hosted, other).error, /practice session/);
+  assert.equal(hosted.status, "question");
+});
+
 test("answer keys are hidden for sets that are being played", () => {
   const { game, room } = setup();
   assert.ok(game.setsInPlay().has("seed_lightning"));

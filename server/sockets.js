@@ -194,6 +194,13 @@ export function attachSockets(io, game) {
       reply(ack, game.submitAnswer(ref.room, ref.player, qIndex, pos));
     });
 
+    on("player:end", (_payload, ack) => {
+      const ref = playerRef();
+      if (!ref) return reply(ack, { ok: false, error: "You are not in a room" });
+      const result = game.endPractice(ref.room, ref.player);
+      reply(ack, result.error ? { ok: false, error: result.error } : { ok: true });
+    });
+
     on("player:visibility", (payload) => {
       game.recordVisibility(socket.id, !!payload?.hidden);
     });

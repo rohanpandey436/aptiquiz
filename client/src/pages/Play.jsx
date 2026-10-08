@@ -196,6 +196,12 @@ export default function Play() {
     return () => window.removeEventListener("keydown", onKey);
   }, [phase, question, answer]);
 
+  const endPractice = async () => {
+    if (!window.confirm("End this practice session and see your report?")) return;
+    const res = await request("player:end");
+    if (!res.ok) setError(res.error || "Could not end the session. Try again.");
+  };
+
   const submitJoin = (e) => {
     e.preventDefault();
     const clean = code.toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -296,9 +302,9 @@ export default function Play() {
         ) : null}
         {phase === "lobby" && lobby ? <LobbyView lobby={lobby} me={me} /> : null}
         {phase === "question" && question ? (
-          <QuestionView question={question} selected={selected} lock={lock} progress={progress} standings={standings} me={me} onAnswer={answer} />
+          <QuestionView question={question} selected={selected} lock={lock} progress={progress} standings={standings} me={me} onAnswer={answer} onEndPractice={question.practice ? endPractice : null} />
         ) : null}
-        {phase === "reveal" && reveal ? <RevealView reveal={reveal} me={me} /> : null}
+        {phase === "reveal" && reveal ? <RevealView reveal={reveal} me={me} onEndPractice={reveal.practice ? endPractice : null} /> : null}
         {phase === "ended" && end ? <ReportCard end={end} me={me} /> : null}
       </div>
     </Shell>
@@ -395,7 +401,17 @@ function StandingsPanel({ standings, me, compact = false }) {
   );
 }
 
-function QuestionView({ question, selected, lock, progress, standings, me, onAnswer }) {
+function EndPracticeButton({ onClick }) {
+  return (
+    <div className="flex justify-center">
+      <Button variant="ghost" size="sm" onClick={onClick}>
+        End practice and see my report
+      </Button>
+    </div>
+  );
+}
+
+function QuestionView({ question, selected, lock, progress, standings, me, onAnswer, onEndPractice }) {
   const locked = selected !== null;
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
@@ -433,10 +449,10 @@ function QuestionView({ question, selected, lock, progress, standings, me, onAns
             </span>
           ) : null}
         </div>
-        <StandingsPanel standings={standings} me={me} compact />
+        {onEndPractice ? <EndPracticeButton onClick={onEndPractice} /> : <StandingsPanel standings={standings} me={me} compact />}
       </div>
       <div className="flex flex-col gap-4">
-        <StandingsPanel standings={standings} me={me} />
+        {onEndPractice ? null : <StandingsPanel standings={standings} me={me} />}
         <Card className="hidden lg:block">
           <h2 className="display text-xl font-bold">Scoring</h2>
           <p className="mt-1 text-sm text-muted">{question.scoring.text}</p>
@@ -456,7 +472,7 @@ function CountUp({ value }) {
   return <>{signed(shown)}</>;
 }
 
-function RevealView({ reveal, me }) {
+function RevealView({ reveal, me, onEndPractice }) {
   const you = reveal.you;
   const tone = you.answered ? (you.correct ? "good" : "bad") : "neutral";
   const title = !you.answered ? "No answer" : you.correct ? "Correct" : "Not this time";
@@ -498,6 +514,7 @@ function RevealView({ reveal, me }) {
         <p className="text-center text-sm font-bold text-muted">
           {reveal.autoAdvance && reveal.autoNextAt ? <Countdown endsAt={reveal.autoNextAt} prefix={reveal.isLast ? "Results in" : "Next question in"} /> : "The host will start the next question."}
         </p>
+        {onEndPractice ? <EndPracticeButton onClick={onEndPractice} /> : null}
       </div>
       {reveal.me ? (
         <div className="flex flex-col gap-4">
