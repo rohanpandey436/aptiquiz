@@ -66,7 +66,7 @@ process.on("uncaughtException", (err) => {
   setTimeout(() => process.exit(1), 200).unref();
 });
 
-const keepAliveUrl = process.env.KEEPALIVE_URL || (process.env.RENDER_EXTERNAL_URL ? `${process.env.RENDER_EXTERNAL_URL}/api/health` : "");
+const keepAliveUrl = process.env.KEEPALIVE_URL || "";
 if (keepAliveUrl) {
   setInterval(() => fetch(keepAliveUrl).catch(() => {}), 10 * 60 * 1000).unref();
 }

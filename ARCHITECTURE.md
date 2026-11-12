@@ -99,7 +99,7 @@ Hosts get per-question correct rates, the three hardest questions, topic accurac
 
 ## Deployment
 
-One Render web service runs `npm start` after `npm ci && npm run build`. The same process serves the static client, the REST API and the websocket, so there is one URL and no CORS. Secrets never enter the repository: `.env.example` lists every variable, and all of them are optional. Free instances sleep when idle, so the server fetches its own `/api/health` every 10 minutes while `RENDER_EXTERNAL_URL` or `KEEPALIVE_URL` is set, so the first load stays fast for visitors.
+One Render web service runs `npm start` after `npm ci && npm run build`. The same process serves the static client, the REST API and the websocket, so there is one URL and no CORS. Secrets never enter the repository: `.env.example` lists every variable, and all of them are optional. Free instances sleep when idle and wake on the next visit. When `KEEPALIVE_URL` is set the server fetches that address every 10 minutes to stay awake. It is unset by default so the free monthly hours are not spent on an idle app.
 
 ## Testing at 50 players
 

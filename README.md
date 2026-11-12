@@ -147,7 +147,7 @@ The same command against the live Render instance, from a laptop in Greater Noid
 
 Latency on the free tier is dominated by the distance to the data centre, not by the server, which is why compensation matters: without it a 270 ms round trip would cost every player about 7 points per question.
 
-Deployment: `render.yaml` describes a single free web service (build `npm ci && npm run build`, start `npm start`). Push to `main` and Render redeploys. Free instances sleep after idle time, so the server pings its own health endpoint every 10 minutes while `RENDER_EXTERNAL_URL` (set by Render) or `KEEPALIVE_URL` is present.
+Deployment: `render.yaml` describes a single free web service (build `npm ci && npm run build`, start `npm start`). Push to `main` and Render redeploys. Free instances sleep after idle time and take about a minute to wake on the next visit. Setting `KEEPALIVE_URL` to the service's own `/api/health` address makes the server ping itself every 10 minutes and stay awake. It is off by default, because Render's free plan gives one account enough hours for a single always-on service.
 
 ## Tools and AI used
 
